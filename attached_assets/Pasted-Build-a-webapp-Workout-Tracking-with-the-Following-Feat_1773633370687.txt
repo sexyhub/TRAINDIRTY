@@ -1,0 +1,101 @@
+Build a webapp Workout Tracking  with the Following Features
+
+Exercise Management
+
+- Allow users to create and organize workout plans by day (e.g., Monday = Push Day, Tuesday = Pull Day).
+- Allow users to add multiple exercises per workout day.
+- Each exercise must be categorized under one of the following:
+  - Chest
+  - Back
+  - Legs
+  - Shoulders
+  - Arms
+  - Core
+  - Cardio
+
+- Each exercise entry must include:
+  - Exercise name
+  - Category
+  - Number of sets
+  - Number of reps
+  - Weight (optional)
+  - Rest time between sets
+  - Optional video demonstration link (YouTube or external URL)
+
+Workout Logging
+
+- Allow users to log workout sessions in real time.
+- Each exercise should support set-by-set tracking including:
+  - Reps completed
+  - Weight used (optional)
+  - Set completion checkbox
+
+- Users must be able to:
+  - Mark each set as completed
+  - Track progress during the session
+
+- Support advanced workout structures:
+  - Supersets
+  - Circuit training groups
+
+Statistics & Progress Tracking
+
+Provide a dashboard with key training metrics, including:
+
+- Total workouts completed
+- Weekly training volume
+- Personal Records (PRs) per exercise
+
+Streak Tracking:
+
+- Current workout streak
+- Longest streak
+- Calendar heatmap showing workout consistency
+
+Progress Tracking:
+
+- Exercise progress charts showing:
+  - Weight progression
+  - Reps progression
+  - Sets progression
+  - Timeline history
+
+Summary Reports:
+
+- Weekly workout summaries
+- Monthly workout summaries
+
+UI / UX Design
+
+- Mobile-first interface design.
+- Modern, minimal, and clean aesthetic.
+- Dark theme optimized for AMOLED displays.
+- Avoid colorful stat cards, dots, gradients, or decorative side borders.
+- Use neutral monochrome UI with subtle contrast only.
+- Avoid generic AI-style UI layouts.
+
+Design requirements:
+
+- Smooth transitions and subtle animations.
+- Simple, highly readable typography.
+- Clean spacing and structured layouts.
+
+Navigation:
+
+Include a bottom navigation bar with the following sections:
+
+- Home
+- Log
+- Stats
+- Timer
+- Profile
+
+Core Behavior Constraints
+
+Workout flow must enforce the following rules:
+
+- A user cannot perform the same workout plan more than once in a single day.
+- A rest period must occur after completing a workout session.
+- If a workout session is currently active:
+  - The user cannot start another workout.
+  - The current workout must be completed before any new workout can begin.
