@@ -7,6 +7,9 @@
  */
 
 export * from "./activeSessionResponse";
+export * from "./authUser";
+export * from "./authUserEnvelope";
+export * from "./beginBrowserLoginParams";
 export * from "./categoryBreakdown";
 export * from "./createExercise";
 export * from "./createSession";
@@ -18,9 +21,13 @@ export * from "./exerciseProgressEntry";
 export * from "./getExercisesParams";
 export * from "./getHeatmapParams";
 export * from "./getSessionsParams";
+export * from "./handleBrowserLoginCallbackParams";
 export * from "./healthStatus";
 export * from "./heatmapEntry";
+export * from "./logoutSuccess";
 export * from "./logSet";
+export * from "./mobileTokenExchangeRequest";
+export * from "./mobileTokenExchangeSuccess";
 export * from "./monthlySummary";
 export * from "./monthlySummaryWeeklyBreakdownItem";
 export * from "./personalRecord";

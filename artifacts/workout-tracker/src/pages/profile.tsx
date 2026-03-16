@@ -1,4 +1,5 @@
 import { useGetProfile, useUpdateProfile } from "@workspace/api-client-react";
+import { useAuth } from "@workspace/replit-auth-web";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -18,6 +19,7 @@ const profileSchema = z.object({
 
 export default function ProfilePage() {
   const queryClient = useQueryClient();
+  const { user: authUser, logout } = useAuth();
   const { data: profile, isLoading } = useGetProfile();
   
   const updateProfile = useUpdateProfile({
@@ -58,12 +60,16 @@ export default function ProfilePage() {
   return (
     <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="p-6 pt-12 space-y-8">
       <div className="flex items-center gap-4">
-        <div className="w-16 h-16 rounded-full bg-secondary flex items-center justify-center border border-border">
-          <User className="w-8 h-8 text-muted-foreground" />
+        <div className="w-16 h-16 rounded-full bg-secondary flex items-center justify-center border border-border overflow-hidden">
+          {authUser?.profileImageUrl ? (
+            <img src={authUser.profileImageUrl} alt="Avatar" className="w-full h-full object-cover" />
+          ) : (
+            <User className="w-8 h-8 text-muted-foreground" />
+          )}
         </div>
         <div>
-          <h1 className="text-2xl font-display font-bold uppercase">{profile?.name || 'Athlete'}</h1>
-          <p className="text-muted-foreground text-sm tracking-widest uppercase">Member</p>
+          <h1 className="text-2xl font-display font-bold uppercase">{profile?.name || authUser?.firstName || 'Athlete'}</h1>
+          <p className="text-muted-foreground text-sm tracking-widest uppercase">{authUser?.email || 'Member'}</p>
         </div>
       </div>
 
@@ -122,7 +128,10 @@ export default function ProfilePage() {
         </button>
       </form>
 
-      <button className="w-full py-4 text-destructive font-bold flex items-center justify-center gap-2 bg-destructive/10 rounded-xl hover:bg-destructive/20 transition-colors">
+      <button
+        onClick={logout}
+        className="w-full py-4 text-destructive font-bold flex items-center justify-center gap-2 bg-destructive/10 rounded-xl hover:bg-destructive/20 transition-colors"
+      >
         LOG OUT <LogOut className="w-4 h-4" />
       </button>
     </motion.div>
