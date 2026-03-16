@@ -42,8 +42,8 @@ export default function TimerPage() {
         </div>
       </div>
 
-      {/* Controls */}
-      <div className="flex items-center gap-6">
+      {/* Controls — reset | play | spacer keeps play perfectly centred */}
+      <div className="flex items-center justify-center gap-6">
         <button 
           onClick={resetTimer}
           className="w-14 h-14 rounded-full bg-secondary flex items-center justify-center text-muted-foreground hover:text-foreground transition-colors"
@@ -63,9 +63,12 @@ export default function TimerPage() {
             onClick={() => timeLeft > 0 ? resumeTimer() : startTimer(customTime)}
             className="w-20 h-20 rounded-full bg-primary text-primary-foreground flex items-center justify-center shadow-lg shadow-primary/20 active:scale-95 transition-transform"
           >
-            <Play className="w-8 h-8 ml-1 fill-current" />
+            <Play className="w-8 h-8 fill-current translate-x-0.5" />
           </button>
         )}
+
+        {/* Invisible counterweight so the play button stays centred */}
+        <div className="w-14 h-14 pointer-events-none" aria-hidden />
       </div>
 
       {/* Presets */}
