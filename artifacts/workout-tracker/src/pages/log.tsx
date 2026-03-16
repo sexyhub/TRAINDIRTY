@@ -19,7 +19,7 @@ import {
 } from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
 import { motion, AnimatePresence } from "framer-motion";
-import { Play, Square, Plus, Check, ChevronDown, ChevronUp, Trash2, X, Edit2, Dumbbell } from "lucide-react";
+import { Play, Square, Plus, Check, ChevronDown, ChevronUp, Trash2, X, Edit2, Dumbbell, Video } from "lucide-react";
 import { useGlobalTimer } from "@/lib/timer-context";
 import { cn } from "@/components/layout";
 
@@ -305,21 +305,45 @@ function ExerciseRow({ exercise, planId }: { exercise: any; planId: number }) {
   });
 
   return (
-    <div className="flex items-center gap-3 py-2 px-1 border-b border-border/20 last:border-0">
-      <div className="flex-1 min-w-0">
-        <p className="text-sm font-semibold truncate">{exercise.name}</p>
-        <p className="text-xs text-muted-foreground">
-          {exercise.sets}×{exercise.reps}
-          {exercise.weight ? ` · ${exercise.weight}kg` : ""}
-          {" · "}{exercise.category}
-        </p>
+    <div className="py-2 px-1 border-b border-border/20 last:border-0 space-y-1">
+      <div className="flex items-center gap-3">
+        <div className="flex-1 min-w-0">
+          <p className="text-sm font-semibold truncate">{exercise.name}</p>
+          <p className="text-xs text-muted-foreground">
+            {exercise.sets}×{exercise.reps}
+            {exercise.weight ? ` · ${exercise.weight}kg` : ""}
+          </p>
+        </div>
+        {exercise.videoUrl && (
+          <a
+            href={exercise.videoUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-primary/60 hover:text-primary transition-colors p-1"
+            title="Watch video"
+          >
+            <Video className="w-3.5 h-3.5" />
+          </a>
+        )}
+        <button
+          onClick={() => deleteExercise.mutate({ id: exercise.id })}
+          className="text-muted-foreground/30 hover:text-destructive transition-colors p-1"
+        >
+          <Trash2 className="w-3.5 h-3.5" />
+        </button>
       </div>
-      <button
-        onClick={() => deleteExercise.mutate({ id: exercise.id })}
-        className="text-muted-foreground/30 hover:text-destructive transition-colors p-1"
-      >
-        <Trash2 className="w-3.5 h-3.5" />
-      </button>
+      {(exercise.tags?.length > 0 || exercise.description) && (
+        <div className="flex flex-wrap items-center gap-1 pl-0.5">
+          {exercise.tags?.map((tag) => (
+            <span key={tag} className="px-1.5 py-0.5 rounded text-[10px] font-bold bg-primary/10 text-primary/80">
+              {tag}
+            </span>
+          ))}
+          {exercise.description && (
+            <span className="text-[10px] text-muted-foreground/60 truncate max-w-[180px]">{exercise.description}</span>
+          )}
+        </div>
+      )}
     </div>
   );
 }
@@ -337,19 +361,31 @@ function NewExerciseForm({ planId, onClose }: { planId: number; onClose: () => v
   });
 
   const [name, setName] = useState("");
-  const [category, setCategory] = useState<typeof CATEGORIES[number]>("Chest");
+  const [tags, setTags] = useState<string[]>([]);
+  const [description, setDescription] = useState("");
+  const [videoUrl, setVideoUrl] = useState("");
   const [sets, setSets] = useState(3);
   const [reps, setReps] = useState(10);
   const [weight, setWeight] = useState("");
   const [rest, setRest] = useState(60);
 
+  const toggleTag = (cat: string) => {
+    setTags((prev) =>
+      prev.includes(cat) ? prev.filter((t) => t !== cat) : [...prev, cat]
+    );
+  };
+
   const submit = () => {
     if (!name.trim()) return;
+    const primaryCategory = (tags[0] ?? "Chest") as typeof CATEGORIES[number];
     createEx.mutate({
       data: {
         planId,
         name: name.trim(),
-        category,
+        category: primaryCategory,
+        tags,
+        description: description.trim() || null,
+        videoUrl: videoUrl.trim() || null,
         sets,
         reps,
         weight: weight ? Number(weight) : null,
@@ -371,6 +407,7 @@ function NewExerciseForm({ planId, onClose }: { planId: number; onClose: () => v
         <button onClick={onClose}><X className="w-4 h-4 text-muted-foreground" /></button>
       </div>
 
+      {/* Name */}
       <input
         type="text"
         placeholder="Exercise name"
@@ -380,20 +417,47 @@ function NewExerciseForm({ planId, onClose }: { planId: number; onClose: () => v
         className="w-full bg-card border border-border rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-1 focus:ring-primary/50 placeholder:text-muted-foreground/40"
       />
 
-      {/* Category picker */}
-      <div className="flex flex-wrap gap-1.5">
-        {CATEGORIES.map((cat) => (
-          <button
-            key={cat}
-            onClick={() => setCategory(cat)}
-            className={cn(
-              "px-2.5 py-1 rounded-lg text-xs font-bold transition-colors",
-              category === cat ? "bg-primary text-primary-foreground" : "bg-secondary text-muted-foreground"
-            )}
-          >
-            {cat}
-          </button>
-        ))}
+      {/* Multi-tag picker */}
+      <div>
+        <p className="text-[10px] text-muted-foreground font-bold uppercase mb-1.5">Muscle Groups <span className="text-muted-foreground/40 normal-case font-normal">(select all that apply)</span></p>
+        <div className="flex flex-wrap gap-1.5">
+          {CATEGORIES.map((cat) => (
+            <button
+              key={cat}
+              type="button"
+              onClick={() => toggleTag(cat)}
+              className={cn(
+                "px-2.5 py-1 rounded-lg text-xs font-bold transition-colors",
+                tags.includes(cat)
+                  ? "bg-primary text-primary-foreground"
+                  : "bg-secondary text-muted-foreground"
+              )}
+            >
+              {cat}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {/* Description */}
+      <textarea
+        placeholder="Description (optional) — cues, form notes…"
+        value={description}
+        onChange={(e) => setDescription(e.target.value)}
+        rows={2}
+        className="w-full bg-card border border-border rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-1 focus:ring-primary/50 placeholder:text-muted-foreground/40 resize-none"
+      />
+
+      {/* Video URL */}
+      <div className="relative">
+        <Video className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground/40" />
+        <input
+          type="url"
+          placeholder="Video URL (optional) — YouTube, etc."
+          value={videoUrl}
+          onChange={(e) => setVideoUrl(e.target.value)}
+          className="w-full bg-card border border-border rounded-lg pl-8 pr-3 py-2.5 text-sm focus:outline-none focus:ring-1 focus:ring-primary/50 placeholder:text-muted-foreground/40"
+        />
       </div>
 
       {/* Sets / Reps / Weight / Rest */}
@@ -591,14 +655,36 @@ function ExerciseTracker({
   return (
     <div className="bg-card border border-border rounded-2xl overflow-hidden">
       <div className="p-4 border-b border-border/40 bg-secondary/20 flex items-center justify-between">
-        <div>
-          <h3 className="font-bold">{exercise.name}</h3>
-          <p className="text-xs text-muted-foreground uppercase tracking-wider mt-0.5">
-            {exercise.category} · Target {exercise.sets}×{exercise.reps}
-            {exercise.weight ? ` @ ${exercise.weight}kg` : ""}
-          </p>
+        <div className="flex-1 min-w-0">
+          <div className="flex items-center gap-2">
+            <h3 className="font-bold">{exercise.name}</h3>
+            {exercise.videoUrl && (
+              <a
+                href={exercise.videoUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-primary/60 hover:text-primary transition-colors"
+                title="Watch tutorial video"
+              >
+                <Video className="w-3.5 h-3.5" />
+              </a>
+            )}
+          </div>
+          <div className="flex flex-wrap items-center gap-1 mt-0.5">
+            {(exercise.tags?.length > 0 ? exercise.tags : [exercise.category]).map((tag) => (
+              <span key={tag} className="text-[10px] font-bold text-primary/70 uppercase tracking-wider">
+                {tag}
+              </span>
+            ))}
+            <span className="text-[10px] text-muted-foreground">
+              · Target {exercise.sets}×{exercise.reps}{exercise.weight ? ` @ ${exercise.weight}kg` : ""}
+            </span>
+          </div>
+          {exercise.description && (
+            <p className="text-[10px] text-muted-foreground/60 mt-0.5 line-clamp-1">{exercise.description}</p>
+          )}
         </div>
-        <span className="text-xs font-bold text-primary">
+        <span className="text-xs font-bold text-primary shrink-0">
           {logs.filter((l) => l.completed).length}/{exercise.sets}
         </span>
       </div>

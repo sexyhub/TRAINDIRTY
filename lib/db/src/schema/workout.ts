@@ -39,6 +39,8 @@ export const exercisesTable = pgTable("exercises", {
   planId: integer("plan_id").notNull().references(() => workoutPlansTable.id, { onDelete: "cascade" }),
   name: text("name").notNull(),
   category: exerciseCategoryEnum("category").notNull(),
+  tags: text("tags").array().notNull().default([]),
+  description: text("description"),
   sets: integer("sets").notNull().default(3),
   reps: integer("reps").notNull().default(10),
   weight: real("weight"),

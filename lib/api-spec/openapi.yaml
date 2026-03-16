@@ -649,6 +649,13 @@ components:
           type: string
         category:
           $ref: "#/components/schemas/ExerciseCategory"
+        tags:
+          type: array
+          items:
+            $ref: "#/components/schemas/ExerciseCategory"
+        description:
+          type: string
+          nullable: true
         sets:
           type: integer
         reps:
@@ -668,7 +675,7 @@ components:
           nullable: true
         sortOrder:
           type: integer
-      required: [id, planId, name, category, sets, reps, restSeconds, groupType, sortOrder]
+      required: [id, planId, name, category, tags, sets, reps, restSeconds, groupType, sortOrder]
 
     CreateExercise:
       type: object
@@ -679,6 +686,13 @@ components:
           type: string
         category:
           $ref: "#/components/schemas/ExerciseCategory"
+        tags:
+          type: array
+          items:
+            $ref: "#/components/schemas/ExerciseCategory"
+        description:
+          type: string
+          nullable: true
         sets:
           type: integer
         reps:
@@ -698,7 +712,7 @@ components:
           nullable: true
         sortOrder:
           type: integer
-      required: [planId, name, category, sets, reps, restSeconds, groupType, sortOrder]
+      required: [planId, name, category, tags, sets, reps, restSeconds, groupType, sortOrder]
 
     SessionStatus:
       type: string

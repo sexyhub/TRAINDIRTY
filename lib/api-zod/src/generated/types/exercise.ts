@@ -13,6 +13,8 @@ export interface Exercise {
   planId: number;
   name: string;
   category: ExerciseCategory;
+  tags: ExerciseCategory[];
+  description?: string | null;
   sets: number;
   reps: number;
   weight?: number | null;
