@@ -143,34 +143,29 @@ router.put("/:id", async (req, res) => {
   const { id } = UpdateSessionParams.parse({ id: Number(req.params.id) });
   const body = UpdateSessionBody.parse(req.body);
 
-  const updateData: Record<string, unknown> = {
-    status: body.status,
-    notes: body.notes,
-  };
+  let totalVolume: number | null = null;
 
-  if (body.status === "completed" || body.status === "aborted") {
-    updateData.completedAt = new Date().toISOString();
+  if (body.status === "completed") {
+    const logs = await db
+      .select()
+      .from(setLogsTable)
+      .where(and(eq(setLogsTable.sessionId, id), eq(setLogsTable.completed, true)));
 
-    // Calculate total volume if completing
-    if (body.status === "completed") {
-      const logs = await db
-        .select()
-        .from(setLogsTable)
-        .where(and(eq(setLogsTable.sessionId, id), eq(setLogsTable.completed, true)));
-      
-      const totalVolume = logs.reduce((sum, log) => {
-        if (log.repsCompleted && log.weightUsed) {
-          return sum + log.repsCompleted * log.weightUsed;
-        }
-        return sum;
-      }, 0);
-      updateData.totalVolume = totalVolume;
-    }
+    totalVolume = logs.reduce((sum, log) => {
+      return sum + (log.repsCompleted ?? 0) * (log.weightUsed ?? 0);
+    }, 0);
   }
+
+  const isFinished = body.status === "completed" || body.status === "aborted";
 
   const [updated] = await db
     .update(workoutSessionsTable)
-    .set(updateData as any)
+    .set({
+      status: body.status,
+      notes: body.notes ?? null,
+      ...(isFinished ? { completedAt: new Date() } : {}),
+      ...(body.status === "completed" ? { totalVolume } : {}),
+    })
     .where(eq(workoutSessionsTable.id, id))
     .returning();
 
