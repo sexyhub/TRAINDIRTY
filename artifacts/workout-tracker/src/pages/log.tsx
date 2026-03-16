@@ -401,10 +401,10 @@ function ExerciseRow({ exercise, planId }: { exercise: any; planId: number }) {
           {exercise.videoUrl && (
             <button
               onClick={() => setVideoOpen(true)}
-              className="text-primary/60 hover:text-primary transition-colors p-1"
+              className="text-primary/60 hover:text-primary transition-colors p-3.5 -m-2.5 rounded-xl touch-manipulation"
               title="Watch video"
             >
-              <Video className="w-3.5 h-3.5" />
+              <Video className="w-4 h-4" />
             </button>
           )}
           <button
@@ -749,10 +749,10 @@ function ExerciseTracker({
               {exercise.videoUrl && (
                 <button
                   onClick={() => setVideoOpen(true)}
-                  className="text-primary/60 hover:text-primary transition-colors"
+                  className="text-primary/60 hover:text-primary transition-colors p-3.5 -m-2.5 rounded-xl touch-manipulation"
                   title="Watch tutorial video"
                 >
-                  <Video className="w-3.5 h-3.5" />
+                  <Video className="w-4 h-4" />
                 </button>
               )}
             </div>
