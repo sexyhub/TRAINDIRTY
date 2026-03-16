@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useCallback } from "react";
 import {
   useGetActiveSession,
   useGetWorkoutPlans,
@@ -25,6 +25,85 @@ import { cn } from "@/components/layout";
 
 const DAYS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 const CATEGORIES = ["Chest", "Back", "Legs", "Shoulders", "Arms", "Core", "Cardio"] as const;
+
+// ── YouTube helpers ────────────────────────────────────────────────────────────
+function toYouTubeEmbedUrl(url: string): string | null {
+  try {
+    const u = new URL(url);
+    let videoId: string | null = null;
+    if (u.hostname.includes("youtu.be")) {
+      videoId = u.pathname.slice(1).split("?")[0];
+    } else if (u.hostname.includes("youtube.com")) {
+      videoId = u.searchParams.get("v");
+      if (!videoId) {
+        const parts = u.pathname.split("/");
+        const embedIdx = parts.indexOf("embed");
+        if (embedIdx !== -1) videoId = parts[embedIdx + 1];
+      }
+    }
+    return videoId ? `https://www.youtube.com/embed/${videoId}?autoplay=1&rel=0` : null;
+  } catch {
+    return null;
+  }
+}
+
+function VideoModal({ url, onClose }: { url: string; onClose: () => void }) {
+  const embedUrl = toYouTubeEmbedUrl(url);
+  return (
+    <AnimatePresence>
+      <motion.div
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        exit={{ opacity: 0 }}
+        className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4"
+        onClick={onClose}
+      >
+        <motion.div
+          initial={{ scale: 0.92, opacity: 0 }}
+          animate={{ scale: 1, opacity: 1 }}
+          exit={{ scale: 0.92, opacity: 0 }}
+          transition={{ type: "spring", stiffness: 300, damping: 28 }}
+          className="w-full max-w-sm bg-card rounded-3xl overflow-hidden shadow-2xl"
+          onClick={(e) => e.stopPropagation()}
+        >
+          <div className="flex items-center justify-between px-5 py-4 border-b border-border/40">
+            <p className="font-bold text-sm tracking-wide">Tutorial Video</p>
+            <button
+              onClick={onClose}
+              className="w-8 h-8 rounded-full bg-secondary flex items-center justify-center text-muted-foreground hover:text-foreground transition-colors"
+            >
+              <X className="w-4 h-4" />
+            </button>
+          </div>
+          <div className="relative w-full" style={{ paddingBottom: "56.25%" }}>
+            {embedUrl ? (
+              <iframe
+                className="absolute inset-0 w-full h-full"
+                src={embedUrl}
+                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                allowFullScreen
+                title="Tutorial video"
+              />
+            ) : (
+              <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 bg-secondary">
+                <Video className="w-8 h-8 text-muted-foreground" />
+                <p className="text-sm text-muted-foreground">Can't embed this URL</p>
+                <a
+                  href={url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-primary text-sm font-bold underline"
+                >
+                  Open in browser
+                </a>
+              </div>
+            )}
+          </div>
+        </motion.div>
+      </motion.div>
+    </AnimatePresence>
+  );
+}
 
 // ── Main page ──────────────────────────────────────────────────────────────────
 export default function LogPage() {
@@ -296,6 +375,7 @@ function PlanCard({
 // ── Exercise row inside a plan ─────────────────────────────────────────────────
 function ExerciseRow({ exercise, planId }: { exercise: any; planId: number }) {
   const queryClient = useQueryClient();
+  const [videoOpen, setVideoOpen] = useState(false);
   const deleteExercise = useDeleteExercise({
     mutation: {
       onSuccess: () => {
@@ -305,46 +385,49 @@ function ExerciseRow({ exercise, planId }: { exercise: any; planId: number }) {
   });
 
   return (
-    <div className="py-2 px-1 border-b border-border/20 last:border-0 space-y-1">
-      <div className="flex items-center gap-3">
-        <div className="flex-1 min-w-0">
-          <p className="text-sm font-semibold truncate">{exercise.name}</p>
-          <p className="text-xs text-muted-foreground">
-            {exercise.sets}×{exercise.reps}
-            {exercise.weight ? ` · ${exercise.weight}kg` : ""}
-          </p>
-        </div>
-        {exercise.videoUrl && (
-          <a
-            href={exercise.videoUrl}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="text-primary/60 hover:text-primary transition-colors p-1"
-            title="Watch video"
-          >
-            <Video className="w-3.5 h-3.5" />
-          </a>
-        )}
-        <button
-          onClick={() => deleteExercise.mutate({ id: exercise.id })}
-          className="text-muted-foreground/30 hover:text-destructive transition-colors p-1"
-        >
-          <Trash2 className="w-3.5 h-3.5" />
-        </button>
-      </div>
-      {(exercise.tags?.length > 0 || exercise.description) && (
-        <div className="flex flex-wrap items-center gap-1 pl-0.5">
-          {exercise.tags?.map((tag) => (
-            <span key={tag} className="px-1.5 py-0.5 rounded text-[10px] font-bold bg-primary/10 text-primary/80">
-              {tag}
-            </span>
-          ))}
-          {exercise.description && (
-            <span className="text-[10px] text-muted-foreground/60 truncate max-w-[180px]">{exercise.description}</span>
-          )}
-        </div>
+    <>
+      {videoOpen && exercise.videoUrl && (
+        <VideoModal url={exercise.videoUrl} onClose={() => setVideoOpen(false)} />
       )}
-    </div>
+      <div className="py-2 px-1 border-b border-border/20 last:border-0 space-y-1">
+        <div className="flex items-center gap-3">
+          <div className="flex-1 min-w-0">
+            <p className="text-sm font-semibold truncate">{exercise.name}</p>
+            <p className="text-xs text-muted-foreground">
+              {exercise.sets}×{exercise.reps}
+              {exercise.weight ? ` · ${exercise.weight}kg` : ""}
+            </p>
+          </div>
+          {exercise.videoUrl && (
+            <button
+              onClick={() => setVideoOpen(true)}
+              className="text-primary/60 hover:text-primary transition-colors p-1"
+              title="Watch video"
+            >
+              <Video className="w-3.5 h-3.5" />
+            </button>
+          )}
+          <button
+            onClick={() => deleteExercise.mutate({ id: exercise.id })}
+            className="text-muted-foreground/30 hover:text-destructive transition-colors p-1"
+          >
+            <Trash2 className="w-3.5 h-3.5" />
+          </button>
+        </div>
+        {(exercise.tags?.length > 0 || exercise.description) && (
+          <div className="flex flex-wrap items-center gap-1 pl-0.5">
+            {exercise.tags?.map((tag) => (
+              <span key={tag} className="px-1.5 py-0.5 rounded text-[10px] font-bold bg-primary/10 text-primary/80">
+                {tag}
+              </span>
+            ))}
+            {exercise.description && (
+              <span className="text-[10px] text-muted-foreground/60 truncate max-w-[180px]">{exercise.description}</span>
+            )}
+          </div>
+        )}
+      </div>
+    </>
   );
 }
 
@@ -608,6 +691,7 @@ function ExerciseTracker({
   onSetComplete: () => void;
 }) {
   const queryClient = useQueryClient();
+  const [videoOpen, setVideoOpen] = useState(false);
   const logSet = useLogSet();
   const updateSetLog = useUpdateSetLog();
 
@@ -653,23 +737,25 @@ function ExerciseTracker({
   };
 
   return (
-    <div className="bg-card border border-border rounded-2xl overflow-hidden">
-      <div className="p-4 border-b border-border/40 bg-secondary/20 flex items-center justify-between">
-        <div className="flex-1 min-w-0">
-          <div className="flex items-center gap-2">
-            <h3 className="font-bold">{exercise.name}</h3>
-            {exercise.videoUrl && (
-              <a
-                href={exercise.videoUrl}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="text-primary/60 hover:text-primary transition-colors"
-                title="Watch tutorial video"
-              >
-                <Video className="w-3.5 h-3.5" />
-              </a>
-            )}
-          </div>
+    <>
+      {videoOpen && exercise.videoUrl && (
+        <VideoModal url={exercise.videoUrl} onClose={() => setVideoOpen(false)} />
+      )}
+      <div className="bg-card border border-border rounded-2xl overflow-hidden">
+        <div className="p-4 border-b border-border/40 bg-secondary/20 flex items-center justify-between">
+          <div className="flex-1 min-w-0">
+            <div className="flex items-center gap-2">
+              <h3 className="font-bold">{exercise.name}</h3>
+              {exercise.videoUrl && (
+                <button
+                  onClick={() => setVideoOpen(true)}
+                  className="text-primary/60 hover:text-primary transition-colors"
+                  title="Watch tutorial video"
+                >
+                  <Video className="w-3.5 h-3.5" />
+                </button>
+              )}
+            </div>
           <div className="flex flex-wrap items-center gap-1 mt-0.5">
             {(exercise.tags?.length > 0 ? exercise.tags : [exercise.category]).map((tag) => (
               <span key={tag} className="text-[10px] font-bold text-primary/70 uppercase tracking-wider">
@@ -714,6 +800,7 @@ function ExerciseTracker({
         </button>
       </div>
     </div>
+    </>
   );
 }
 
