@@ -1,4 +1,4 @@
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect, useRef } from "react";
 import {
   useGetActiveSession,
   useGetWorkoutPlans,
@@ -401,7 +401,7 @@ function ExerciseRow({ exercise, planId }: { exercise: any; planId: number }) {
           {exercise.videoUrl && (
             <button
               onClick={() => setVideoOpen(true)}
-              className="text-primary/60 hover:text-primary transition-colors p-3.5 -m-2.5 rounded-xl touch-manipulation"
+              className="bg-primary/15 hover:bg-primary/25 text-primary border border-primary/30 transition-colors p-2 -m-1 rounded-lg touch-manipulation flex items-center justify-center min-w-[44px] min-h-[44px]"
               title="Watch video"
             >
               <Video className="w-4 h-4" />
@@ -594,9 +594,42 @@ function NewExerciseForm({ planId, onClose }: { planId: number; onClose: () => v
 }
 
 // ── Active workout view ───────────────────────────────────────────────────────
+function fmtTime(sec: number) {
+  const h = Math.floor(sec / 3600);
+  const m = Math.floor((sec % 3600) / 60);
+  const s = sec % 60;
+  if (h > 0) return `${h}:${String(m).padStart(2, "0")}:${String(s).padStart(2, "0")}`;
+  return `${String(m).padStart(2, "0")}:${String(s).padStart(2, "0")}`;
+}
+
 function ActiveWorkoutView({ session }: { session: any }) {
   const queryClient = useQueryClient();
-  const { startTimer } = useGlobalTimer();
+  const { startTimer, isActive: restActive } = useGlobalTimer();
+
+  // ── Elapsed timer ──────────────────────────────────────────────────────────
+  const [elapsedSec, setElapsedSec] = useState(0);
+  const [breakSec, setBreakSec] = useState(0);
+  const restStartRef = useRef<number | null>(null);
+
+  useEffect(() => {
+    const start = new Date(session.startedAt).getTime();
+    const tick = () => setElapsedSec(Math.floor((Date.now() - start) / 1000));
+    tick();
+    const id = setInterval(tick, 1000);
+    return () => clearInterval(id);
+  }, [session.startedAt]);
+
+  useEffect(() => {
+    if (restActive) {
+      restStartRef.current = Date.now();
+    } else if (restStartRef.current !== null) {
+      const elapsed = Math.floor((Date.now() - restStartRef.current) / 1000);
+      setBreakSec((prev) => prev + elapsed);
+      restStartRef.current = null;
+    }
+  }, [restActive]);
+
+  const activeSec = Math.max(0, elapsedSec - breakSec);
 
   const { data: fullPlan } = useGetWorkoutPlan(session.planId);
   const { data: fullSession } = useGetSession(session.id);
@@ -622,6 +655,22 @@ function ActiveWorkoutView({ session }: { session: any }) {
           ACTIVE SESSION
         </span>
         <h1 className="text-3xl font-display font-black tracking-tight">{session.planName}</h1>
+
+        {/* Workout timer strip */}
+        <div className="mt-4 grid grid-cols-3 gap-2">
+          <div className="bg-card border border-border rounded-xl p-2.5 text-center">
+            <p className="text-[9px] font-black tracking-widest text-muted-foreground mb-0.5">TOTAL</p>
+            <p className="font-display font-bold text-sm tabular-nums">{fmtTime(elapsedSec)}</p>
+          </div>
+          <div className="bg-card border border-border rounded-xl p-2.5 text-center">
+            <p className="text-[9px] font-black tracking-widest text-muted-foreground mb-0.5">ACTIVE</p>
+            <p className="font-display font-bold text-sm tabular-nums text-primary">{fmtTime(activeSec)}</p>
+          </div>
+          <div className={cn("bg-card border rounded-xl p-2.5 text-center transition-colors", restActive ? "border-yellow-500/50 bg-yellow-500/10" : "border-border")}>
+            <p className="text-[9px] font-black tracking-widest text-muted-foreground mb-0.5">BREAK</p>
+            <p className={cn("font-display font-bold text-sm tabular-nums", restActive ? "text-yellow-400" : "")}>{fmtTime(restActive ? breakSec + Math.floor((Date.now() - (restStartRef.current ?? Date.now())) / 1000) : breakSec)}</p>
+          </div>
+        </div>
 
         {/* Progress bar */}
         <div className="mt-3 space-y-1">
@@ -749,7 +798,7 @@ function ExerciseTracker({
               {exercise.videoUrl && (
                 <button
                   onClick={() => setVideoOpen(true)}
-                  className="text-primary/60 hover:text-primary transition-colors p-3.5 -m-2.5 rounded-xl touch-manipulation"
+                  className="bg-primary/15 hover:bg-primary/25 text-primary border border-primary/30 transition-colors p-2 rounded-lg touch-manipulation flex items-center justify-center min-w-[44px] min-h-[44px]"
                   title="Watch tutorial video"
                 >
                   <Video className="w-4 h-4" />
