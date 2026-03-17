@@ -59,8 +59,8 @@ Express 5 API server. Routes live in `src/routes/` and use `@workspace/api-zod` 
 - Routes: `src/routes/index.ts` mounts sub-routers; `src/routes/health.ts` exposes `GET /health` (full path: `/api/health`)
 - Depends on: `@workspace/db`, `@workspace/api-zod`
 - `pnpm --filter @workspace/api-server run dev` — run the dev server
-- `pnpm --filter @workspace/api-server run build` — production esbuild bundle (`dist/index.cjs`)
-- Build bundles an allowlist of deps (express, cors, pg, drizzle-orm, zod, etc.) and externalizes the rest
+- `pnpm --filter @workspace/api-server run build` — production esbuild bundles: `dist/index.cjs` (Replit) + `dist/handler.cjs` (Vercel serverless)
+- Build bundles an allowlist of deps (express, cors, pg, drizzle-orm, zod, openid-client, cookie-parser, etc.) and externalizes the rest
 
 ### `lib/db` (`@workspace/db`)
 
@@ -90,6 +90,32 @@ Generated Zod schemas from the OpenAPI spec (e.g. `HealthCheckResponse`). Used b
 ### `lib/api-client-react` (`@workspace/api-client-react`)
 
 Generated React Query hooks and fetch client from the OpenAPI spec (e.g. `useHealthCheck`, `healthCheck`).
+
+## Vercel Deployment
+
+The project is configured for single-project Vercel deployment:
+
+- **`vercel.json`** — build command, output directory, and rewrites:
+  - `/api/*` → `api/index.js` serverless function (the Express app)
+  - `/*` → `index.html` SPA fallback
+- **`api/index.js`** — thin Vercel serverless entry point; requires `./handler.cjs` which is copied during build
+- **`api/handler.cjs`** — generated build artifact (git-ignored); created by the build step via `cp artifacts/api-server/dist/handler.cjs api/handler.cjs`
+- **Build produces two API bundles**: `dist/index.cjs` (Replit server) and `dist/handler.cjs` (Vercel serverless, no `listen()`)
+
+### Deploying to Vercel
+
+1. Push code to GitHub
+2. Import the repo in Vercel (Framework Preset: **Other**)
+3. Vercel will use settings from `vercel.json` automatically
+4. Add environment variables in Vercel dashboard:
+   - `NEON_DATABASE_URL` — your Neon PostgreSQL connection string
+   - `VITE_REQUIRE_AUTH` — set to `"true"` to enable the Replit auth login gate (requires `REPL_ID` env var too); leave unset to skip auth
+5. Deploy
+
+### Auth behavior
+
+- **On Replit** (with `REPL_ID` set + `VITE_REQUIRE_AUTH=true`): Full Replit OIDC login flow
+- **On Vercel** (without `VITE_REQUIRE_AUTH=true`): No login required — users go directly to the app
 
 ### `scripts` (`@workspace/scripts`)
 

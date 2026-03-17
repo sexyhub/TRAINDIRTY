@@ -13,6 +13,7 @@ const allowlist = [
   "@google/generative-ai",
   "axios",
   "connect-pg-simple",
+  "cookie-parser",
   "cors",
   "date-fns",
   "drizzle-orm",
@@ -26,6 +27,7 @@ const allowlist = [
   "nanoid",
   "nodemailer",
   "openai",
+  "openid-client",
   "passport",
   "passport-local",
   "pg",
@@ -41,7 +43,6 @@ async function buildAll() {
   const distDir = path.resolve(__dirname, "dist");
   await rm(distDir, { recursive: true, force: true });
 
-  console.log("building server...");
   const pkgPath = path.resolve(__dirname, "package.json");
   const pkg = JSON.parse(await readFile(pkgPath, "utf-8"));
   const allDeps = [
@@ -54,18 +55,30 @@ async function buildAll() {
       !(pkg.dependencies?.[dep]?.startsWith("workspace:")),
   );
 
-  await esbuild({
-    entryPoints: [path.resolve(__dirname, "src/index.ts")],
-    platform: "node",
+  const sharedOptions = {
+    platform: "node" as const,
     bundle: true,
-    format: "cjs",
-    outfile: path.resolve(distDir, "index.cjs"),
+    format: "cjs" as const,
     define: {
       "process.env.NODE_ENV": '"production"',
     },
     minify: true,
     external: externals,
-    logLevel: "info",
+    logLevel: "info" as const,
+  };
+
+  console.log("building server (Replit)...");
+  await esbuild({
+    ...sharedOptions,
+    entryPoints: [path.resolve(__dirname, "src/index.ts")],
+    outfile: path.resolve(distDir, "index.cjs"),
+  });
+
+  console.log("building handler (Vercel)...");
+  await esbuild({
+    ...sharedOptions,
+    entryPoints: [path.resolve(__dirname, "src/app.ts")],
+    outfile: path.resolve(distDir, "handler.cjs"),
   });
 }
 

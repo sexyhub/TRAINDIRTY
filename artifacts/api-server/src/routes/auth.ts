@@ -91,6 +91,10 @@ router.get("/auth/user", (req: Request, res: Response) => {
 });
 
 router.get("/login", async (req: Request, res: Response) => {
+  if (!process.env.REPL_ID) {
+    res.status(501).json({ error: "Replit auth is not configured for this deployment." });
+    return;
+  }
   const config = await getOidcConfig();
   const callbackUrl = `${getOrigin(req)}/api/callback`;
 
@@ -122,6 +126,10 @@ router.get("/login", async (req: Request, res: Response) => {
 // Query params are not validated because the OIDC provider may include
 // parameters not expressed in the schema.
 router.get("/callback", async (req: Request, res: Response) => {
+  if (!process.env.REPL_ID) {
+    res.status(501).json({ error: "Replit auth is not configured for this deployment." });
+    return;
+  }
   const config = await getOidcConfig();
   const callbackUrl = `${getOrigin(req)}/api/callback`;
 
@@ -188,6 +196,11 @@ router.get("/callback", async (req: Request, res: Response) => {
 });
 
 router.get("/logout", async (req: Request, res: Response) => {
+  if (!process.env.REPL_ID) {
+    await clearSession(res, getSessionId(req));
+    res.redirect("/");
+    return;
+  }
   const config = await getOidcConfig();
   const origin = getOrigin(req);
 

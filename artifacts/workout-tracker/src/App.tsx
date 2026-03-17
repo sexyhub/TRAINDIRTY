@@ -7,6 +7,10 @@ import { TimerProvider } from "@/lib/timer-context";
 import { useAuth } from "@workspace/replit-auth-web";
 import { Dumbbell, Loader2 } from "lucide-react";
 
+// Set VITE_REQUIRE_AUTH=true in your deployment env to enable Replit auth gate.
+// Leave unset (or set to anything else) to skip auth (e.g. Vercel deployments).
+const AUTH_REQUIRED = import.meta.env.VITE_REQUIRE_AUTH === "true";
+
 import Home from "@/pages/home";
 import LogPage from "@/pages/log";
 import StatsPage from "@/pages/stats";
@@ -69,12 +73,7 @@ function Router() {
   );
 }
 
-function AuthenticatedApp() {
-  const { isLoading, isAuthenticated } = useAuth();
-
-  if (isLoading) return <LoadingScreen />;
-  if (!isAuthenticated) return <LoginScreen />;
-
+function AppShell() {
   return (
     <TimerProvider>
       <TooltipProvider>
@@ -85,6 +84,16 @@ function AuthenticatedApp() {
       </TooltipProvider>
     </TimerProvider>
   );
+}
+
+function AuthenticatedApp() {
+  const { isLoading, isAuthenticated } = useAuth();
+
+  if (!AUTH_REQUIRED) return <AppShell />;
+  if (isLoading) return <LoadingScreen />;
+  if (!isAuthenticated) return <LoginScreen />;
+
+  return <AppShell />;
 }
 
 function App() {
