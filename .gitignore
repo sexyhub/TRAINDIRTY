@@ -50,3 +50,4 @@ Thumbs.db
 
 # Vercel build artifacts
 api/handler.cjs
+/public
