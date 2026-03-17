@@ -1,6 +1,5 @@
 {
-  "buildCommand": "pnpm --filter @workspace/api-server run build && pnpm --filter @workspace/workout-tracker run build",
-  "outputDirectory": "artifacts/workout-tracker/dist/public",
+  "buildCommand": "pnpm --filter @workspace/api-server run build && pnpm --filter @workspace/workout-tracker run build && mkdir -p public && cp -r artifacts/workout-tracker/dist/public/. public/",
   "installCommand": "pnpm install",
   "rewrites": [
     { "source": "/api/(.*)", "destination": "/api/index" },
