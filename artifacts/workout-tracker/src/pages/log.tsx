@@ -10,6 +10,7 @@ import {
   useUpdateSession,
   useCreateWorkoutPlan,
   useCreateExercise,
+  useUpdateExercise,
   useDeleteWorkoutPlan,
   useDeleteExercise,
   useGetSessions,
@@ -22,7 +23,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   Play, Square, Plus, Check, ChevronDown, ChevronUp,
-  Trash2, X, Dumbbell, Video, SkipForward, Lock, CheckCircle2,
+  Trash2, X, Dumbbell, Video, SkipForward, Lock, CheckCircle2, Pencil,
 } from "lucide-react";
 import { useGlobalTimer } from "@/lib/timer-context";
 import { cn } from "@/components/layout";
@@ -452,6 +453,7 @@ function ExerciseRow({ exercise, planId }: { exercise: any; planId: number }) {
   const queryClient = useQueryClient();
   const [videoOpen, setVideoOpen] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(false);
+  const [editing, setEditing] = useState(false);
 
   const deleteExercise = useDeleteExercise({
     mutation: {
@@ -460,6 +462,10 @@ function ExerciseRow({ exercise, planId }: { exercise: any; planId: number }) {
       },
     },
   });
+
+  if (editing) {
+    return <EditExerciseForm exercise={exercise} planId={planId} onClose={() => setEditing(false)} />;
+  }
 
   return (
     <>
@@ -499,6 +505,13 @@ function ExerciseRow({ exercise, planId }: { exercise: any; planId: number }) {
             </button>
           )}
           <button
+            onClick={() => setEditing(true)}
+            className="text-muted-foreground/40 hover:text-primary transition-colors p-1"
+            title="Edit exercise"
+          >
+            <Pencil className="w-3.5 h-3.5" />
+          </button>
+          <button
             onClick={() => setConfirmDelete(true)}
             className="text-muted-foreground/30 hover:text-destructive transition-colors p-1"
           >
@@ -519,6 +532,199 @@ function ExerciseRow({ exercise, planId }: { exercise: any; planId: number }) {
         )}
       </div>
     </>
+  );
+}
+
+// ── Edit exercise form ────────────────────────────────────────────────────────
+function EditExerciseForm({ exercise, planId, onClose }: { exercise: any; planId: number; onClose: () => void }) {
+  const queryClient = useQueryClient();
+  const updateExercise = useUpdateExercise({
+    mutation: {
+      onSuccess: () => {
+        queryClient.invalidateQueries({ queryKey: getGetWorkoutPlanQueryKey(planId) });
+        onClose();
+      },
+    },
+  });
+
+  const [name, setName] = useState<string>(exercise.name);
+  const [tags, setTags] = useState<string[]>(exercise.tags ?? []);
+  const [description, setDescription] = useState<string>(exercise.description ?? "");
+  const [videoUrl, setVideoUrl] = useState<string>(exercise.videoUrl ?? "");
+  const [sets, setSets] = useState<number>(exercise.sets);
+  const [reps, setReps] = useState<number>(exercise.reps);
+  const [weight, setWeight] = useState<string>(exercise.weight != null ? String(exercise.weight) : "");
+  const [rest, setRest] = useState<number>(exercise.restSeconds);
+  const [isBodyweight, setIsBodyweight] = useState<boolean>(exercise.isBodyweight ?? false);
+
+  const toggleTag = (cat: string) => {
+    setTags((prev) => prev.includes(cat) ? prev.filter((t) => t !== cat) : [...prev, cat]);
+  };
+
+  const save = () => {
+    if (!name.trim()) return;
+    const primaryCategory = (tags[0] ?? exercise.category) as typeof CATEGORIES[number];
+    updateExercise.mutate({
+      id: exercise.id,
+      data: {
+        planId,
+        name: name.trim(),
+        category: primaryCategory,
+        tags,
+        description: description.trim() || null,
+        videoUrl: videoUrl.trim() || null,
+        sets,
+        reps,
+        weight: isBodyweight ? null : (weight ? Number(weight) : null),
+        isBodyweight,
+        restSeconds: rest,
+        groupType: exercise.groupType ?? "none",
+        sortOrder: exercise.sortOrder ?? 0,
+      },
+    });
+  };
+
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: -8 }}
+      animate={{ opacity: 1, y: 0 }}
+      className="bg-primary/5 border border-primary/20 rounded-xl p-4 space-y-3"
+    >
+      <div className="flex items-center justify-between">
+        <p className="text-xs font-black tracking-widest text-primary uppercase">Edit Exercise</p>
+        <button onClick={onClose}><X className="w-4 h-4 text-muted-foreground" /></button>
+      </div>
+
+      {/* Name */}
+      <input
+        type="text"
+        value={name}
+        onChange={(e) => setName(e.target.value)}
+        autoFocus
+        className="w-full bg-card border border-border rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-1 focus:ring-primary/50"
+      />
+
+      {/* Tags */}
+      <div>
+        <p className="text-[10px] text-muted-foreground font-bold uppercase mb-1.5">Muscle Groups</p>
+        <div className="flex flex-wrap gap-1.5">
+          {CATEGORIES.map((cat) => (
+            <button
+              key={cat}
+              type="button"
+              onClick={() => toggleTag(cat)}
+              className={cn(
+                "px-2.5 py-1 rounded-lg text-xs font-bold transition-colors",
+                tags.includes(cat) ? "bg-primary text-primary-foreground" : "bg-secondary text-muted-foreground"
+              )}
+            >
+              {cat}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {/* Bodyweight toggle */}
+      <div className="flex items-center justify-between bg-card border border-border rounded-lg px-3 py-2.5">
+        <div>
+          <p className="text-sm font-bold">Bodyweight Exercise</p>
+          <p className="text-[10px] text-muted-foreground">No weight tracking needed</p>
+        </div>
+        <button
+          type="button"
+          onClick={() => setIsBodyweight(!isBodyweight)}
+          className={cn(
+            "w-11 h-6 rounded-full transition-colors relative shrink-0",
+            isBodyweight ? "bg-primary" : "bg-secondary"
+          )}
+        >
+          <span
+            className={cn(
+              "absolute top-0.5 w-5 h-5 rounded-full bg-white shadow transition-transform",
+              isBodyweight ? "translate-x-5" : "translate-x-0.5"
+            )}
+          />
+        </button>
+      </div>
+
+      {/* Description */}
+      <textarea
+        placeholder="Description (optional)"
+        value={description}
+        onChange={(e) => setDescription(e.target.value)}
+        rows={2}
+        className="w-full bg-card border border-border rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-1 focus:ring-primary/50 placeholder:text-muted-foreground/40 resize-none"
+      />
+
+      {/* Video URL */}
+      <div className="relative">
+        <Video className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground/40" />
+        <input
+          type="url"
+          placeholder="Video URL (optional)"
+          value={videoUrl}
+          onChange={(e) => setVideoUrl(e.target.value)}
+          className="w-full bg-card border border-border rounded-lg pl-8 pr-3 py-2.5 text-sm focus:outline-none focus:ring-1 focus:ring-primary/50 placeholder:text-muted-foreground/40"
+        />
+      </div>
+
+      {/* Sets / Reps / Weight / Rest */}
+      <div className={cn("grid gap-2", isBodyweight ? "grid-cols-3" : "grid-cols-4")}>
+        {[
+          { label: "Sets", value: sets, onChange: (v: number) => setSets(v), min: 1 },
+          { label: "Reps", value: reps, onChange: (v: number) => setReps(v), min: 1 },
+        ].map(({ label, value, onChange, min }) => (
+          <div key={label}>
+            <p className="text-[10px] text-muted-foreground font-bold uppercase mb-1">{label}</p>
+            <input
+              type="number"
+              value={value}
+              min={min}
+              onChange={(e) => onChange(Number(e.target.value))}
+              className="w-full bg-card border border-border rounded-lg px-2 py-2 text-sm text-center font-bold focus:outline-none focus:ring-1 focus:ring-primary/50"
+            />
+          </div>
+        ))}
+        {!isBodyweight && (
+          <div>
+            <p className="text-[10px] text-muted-foreground font-bold uppercase mb-1">Weight</p>
+            <input
+              type="number"
+              placeholder="—"
+              value={weight}
+              onChange={(e) => setWeight(e.target.value)}
+              className="w-full bg-card border border-border rounded-lg px-2 py-2 text-sm text-center font-bold focus:outline-none focus:ring-1 focus:ring-primary/50 placeholder:text-muted-foreground/30"
+            />
+          </div>
+        )}
+        <div>
+          <p className="text-[10px] text-muted-foreground font-bold uppercase mb-1">Rest (s)</p>
+          <input
+            type="number"
+            value={rest}
+            min={0}
+            onChange={(e) => setRest(Number(e.target.value))}
+            className="w-full bg-card border border-border rounded-lg px-2 py-2 text-sm text-center font-bold focus:outline-none focus:ring-1 focus:ring-primary/50"
+          />
+        </div>
+      </div>
+
+      <div className="flex gap-2">
+        <button
+          onClick={onClose}
+          className="flex-1 py-2.5 rounded-xl bg-secondary text-muted-foreground text-sm font-bold"
+        >
+          Cancel
+        </button>
+        <button
+          onClick={save}
+          disabled={!name.trim() || updateExercise.isPending}
+          className="flex-1 py-2.5 rounded-xl bg-primary text-primary-foreground text-sm font-bold disabled:opacity-40 transition-opacity"
+        >
+          {updateExercise.isPending ? "Saving..." : "Save Changes"}
+        </button>
+      </div>
+    </motion.div>
   );
 }
 

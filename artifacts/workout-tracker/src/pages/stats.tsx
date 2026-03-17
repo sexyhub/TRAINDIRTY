@@ -2,15 +2,13 @@ import { useState, useEffect } from "react";
 import { cn } from "@/components/layout";
 import {
   useGetStatsOverview,
-  useGetPersonalRecords,
   useGetExercises,
   useGetExerciseProgress,
   useGetSessions,
 } from "@workspace/api-client-react";
 import { motion } from "framer-motion";
-import { Activity, Trophy, TrendingUp, ChevronLeft, ChevronRight, Calendar, Clock, CheckCircle2, XCircle, Dumbbell } from "lucide-react";
+import { Activity, TrendingUp, ChevronLeft, ChevronRight, Calendar, Clock } from "lucide-react";
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts";
-import { format, formatDistanceToNow } from "date-fns";
 
 function formatDuration(ms: number) {
   const totalSec = Math.floor(ms / 1000);
@@ -26,7 +24,6 @@ function pad2(n: number) {
 
 export default function StatsPage() {
   const { data: stats } = useGetStatsOverview();
-  const { data: prs = [] } = useGetPersonalRecords();
   const { data: exercises = [] } = useGetExercises();
   const { data: sessions = [] } = useGetSessions({ limit: 200 });
 
@@ -78,9 +75,6 @@ export default function StatsPage() {
       {/* Workout Calendar */}
       <WorkoutCalendar sessions={sessions} />
 
-      {/* Workout History */}
-      <WorkoutHistory sessions={sessions} />
-
       {/* Progress Chart */}
       <div className="bg-card border border-border rounded-3xl p-5">
         <div className="flex items-center justify-between mb-6">
@@ -125,134 +119,7 @@ export default function StatsPage() {
           </div>
         )}
       </div>
-
-      {/* Personal Records */}
-      <div className="space-y-4">
-        <h2 className="font-display font-bold flex items-center gap-2 tracking-widest text-sm">
-          <Trophy className="w-4 h-4 text-muted-foreground" /> PERSONAL RECORDS
-        </h2>
-        <div className="space-y-3">
-          {prs.slice(0, 5).map((pr: any) => (
-            <div key={pr.exerciseId} className="flex items-center justify-between p-4 bg-card border border-border rounded-2xl">
-              <div>
-                <p className="font-bold">{pr.exerciseName}</p>
-                <p className="text-xs text-muted-foreground uppercase">{pr.category}</p>
-              </div>
-              <div className="text-right">
-                <p className="font-display font-bold text-xl">
-                  {pr.maxWeight} <span className="text-sm text-muted-foreground">kg</span>
-                </p>
-                <p className="text-xs text-muted-foreground">{pr.maxReps} Reps</p>
-              </div>
-            </div>
-          ))}
-        </div>
-      </div>
     </motion.div>
-  );
-}
-
-// ── Workout History ────────────────────────────────────────────────────────────
-function WorkoutHistory({ sessions }: { sessions: any[] }) {
-  const [showAll, setShowAll] = useState(false);
-
-  const sorted = [...sessions]
-    .filter((s: any) => s.status === "completed" || s.status === "aborted")
-    .sort((a: any, b: any) => new Date(b.startedAt).getTime() - new Date(a.startedAt).getTime());
-
-  const visible = showAll ? sorted : sorted.slice(0, 5);
-
-  if (sorted.length === 0) {
-    return (
-      <div className="bg-card border border-border rounded-3xl p-5">
-        <h2 className="font-display font-bold flex items-center gap-2 tracking-widest text-sm mb-4">
-          <Dumbbell className="w-4 h-4 text-muted-foreground" /> WORKOUT HISTORY
-        </h2>
-        <p className="text-xs text-muted-foreground text-center py-6">No completed workouts yet</p>
-      </div>
-    );
-  }
-
-  return (
-    <div className="bg-card border border-border rounded-3xl p-5 space-y-4">
-      <h2 className="font-display font-bold flex items-center gap-2 tracking-widest text-sm">
-        <Dumbbell className="w-4 h-4 text-muted-foreground" /> WORKOUT HISTORY
-      </h2>
-
-      <div className="space-y-2">
-        {visible.map((session: any) => {
-          const start = new Date(session.startedAt);
-          const end = session.completedAt ? new Date(session.completedAt) : null;
-          const durationMs = end ? end.getTime() - start.getTime() : null;
-          const isCompleted = session.status === "completed";
-
-          return (
-            <div
-              key={session.id}
-              className={cn(
-                "flex items-center gap-3 p-3 rounded-2xl border transition-all",
-                isCompleted ? "bg-background/60 border-border/60" : "bg-secondary/30 border-border/30 opacity-60"
-              )}
-            >
-              <div
-                className={cn(
-                  "w-9 h-9 rounded-xl flex items-center justify-center shrink-0",
-                  isCompleted ? "bg-primary/15" : "bg-secondary"
-                )}
-              >
-                {isCompleted ? (
-                  <CheckCircle2 className="w-4 h-4 text-primary" />
-                ) : (
-                  <XCircle className="w-4 h-4 text-muted-foreground/50" />
-                )}
-              </div>
-
-              <div className="flex-1 min-w-0">
-                <p className="text-sm font-bold truncate">{session.planName}</p>
-                <div className="flex items-center gap-2 mt-0.5">
-                  <p className="text-[10px] text-muted-foreground">
-                    {format(start, "EEE, MMM d")}
-                  </p>
-                  {durationMs && durationMs > 0 && (
-                    <>
-                      <span className="text-[10px] text-muted-foreground/40">·</span>
-                      <p className="text-[10px] text-muted-foreground">
-                        {formatDuration(durationMs)}
-                      </p>
-                    </>
-                  )}
-                  {!isCompleted && (
-                    <span className="text-[9px] font-black text-muted-foreground/40 uppercase tracking-wider">Aborted</span>
-                  )}
-                </div>
-              </div>
-
-              <div className="text-right shrink-0">
-                {session.totalVolume && session.totalVolume > 0 ? (
-                  <>
-                    <p className="text-sm font-bold tabular-nums">{session.totalVolume.toLocaleString()}</p>
-                    <p className="text-[10px] text-muted-foreground">kg vol</p>
-                  </>
-                ) : (
-                  <p className="text-[10px] text-muted-foreground/40">
-                    {formatDistanceToNow(start, { addSuffix: true })}
-                  </p>
-                )}
-              </div>
-            </div>
-          );
-        })}
-      </div>
-
-      {sorted.length > 5 && (
-        <button
-          onClick={() => setShowAll(!showAll)}
-          className="w-full py-2.5 rounded-xl bg-secondary text-muted-foreground text-xs font-bold hover:text-foreground transition-colors"
-        >
-          {showAll ? "Show Less" : `Show All ${sorted.length} Workouts`}
-        </button>
-      )}
-    </div>
   );
 }
 
