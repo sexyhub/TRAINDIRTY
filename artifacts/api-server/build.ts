@@ -1,7 +1,7 @@
 import path from "path";
 import { fileURLToPath } from "url";
 import { build as esbuild } from "esbuild";
-import { rm, readFile } from "fs/promises";
+import { rm, readFile, copyFile, mkdir } from "fs/promises";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -74,12 +74,20 @@ async function buildAll() {
     outfile: path.resolve(distDir, "index.cjs"),
   });
 
+  const handlerOut = path.resolve(distDir, "handler.cjs");
   console.log("building handler (Vercel)...");
   await esbuild({
     ...sharedOptions,
     entryPoints: [path.resolve(__dirname, "src/app.ts")],
-    outfile: path.resolve(distDir, "handler.cjs"),
+    outfile: handlerOut,
   });
+
+  // Copy handler.cjs into the repo-root api/ directory so Vercel can
+  // package it alongside api/index.js as a self-contained serverless function.
+  const apiDir = path.resolve(__dirname, "..", "..", "api");
+  await mkdir(apiDir, { recursive: true });
+  await copyFile(handlerOut, path.resolve(apiDir, "handler.cjs"));
+  console.log("handler.cjs copied to api/");
 }
 
 buildAll().catch((err) => {

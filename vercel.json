@@ -1,5 +1,5 @@
 {
-  "buildCommand": "pnpm --filter @workspace/api-server run build && cp artifacts/api-server/dist/handler.cjs api/handler.cjs && pnpm --filter @workspace/workout-tracker run build",
+  "buildCommand": "pnpm --filter @workspace/api-server run build && pnpm --filter @workspace/workout-tracker run build",
   "outputDirectory": "artifacts/workout-tracker/dist/public",
   "installCommand": "pnpm install",
   "rewrites": [
