@@ -1,5 +1,5 @@
 {
-  "buildCommand": "pnpm --filter @workspace/api-server run build && pnpm --filter @workspace/workout-tracker run build && node scripts/copy-to-public.mjs",
+  "buildCommand": "pnpm --filter @workspace/api-server run build && pnpm --filter @workspace/workout-tracker run build",
   "installCommand": "pnpm install",
   "rewrites": [
     { "source": "/api/(.*)", "destination": "/api/index" },
