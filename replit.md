@@ -114,8 +114,11 @@ The project is configured for single-project Vercel deployment:
 
 ### Auth behavior
 
-- **On Replit** (with `REPL_ID` set + `VITE_REQUIRE_AUTH=true`): Full Replit OIDC login flow
-- **On Vercel** (without `VITE_REQUIRE_AUTH=true`): No login required — users go directly to the app
+- **Email + Password auth**: Users register/login with email and password. Passwords are hashed with `crypto.scrypt` (Node.js built-in). Sessions are stored in the `sessions` DB table with `HttpOnly` cookies.
+- **On Replit** (with `REPL_ID` set): Replit OIDC login is also available alongside email auth
+- Auth routes: `POST /api/auth/register`, `POST /api/auth/login`, `POST /api/auth/logout`, `GET /api/auth/user`
+- Frontend uses `AuthProvider` context (in `lib/replit-auth-web`) for shared auth state across all components
+- The `usersTable` has a `passwordHash` column for email auth users
 
 ### `scripts` (`@workspace/scripts`)
 

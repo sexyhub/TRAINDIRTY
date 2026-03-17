@@ -129,7 +129,7 @@ export default function ProfilePage() {
       </form>
 
       <button
-        onClick={logout}
+        onClick={() => logout()}
         className="w-full py-4 text-destructive font-bold flex items-center justify-center gap-2 bg-destructive/10 rounded-xl hover:bg-destructive/20 transition-colors"
       >
         LOG OUT <LogOut className="w-4 h-4" />
