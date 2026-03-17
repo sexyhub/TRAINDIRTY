@@ -44,6 +44,7 @@ export const exercisesTable = pgTable("exercises", {
   sets: integer("sets").notNull().default(3),
   reps: integer("reps").notNull().default(10),
   weight: real("weight"),
+  isBodyweight: boolean("is_bodyweight").notNull().default(false),
   restSeconds: integer("rest_seconds").notNull().default(60),
   videoUrl: text("video_url"),
   groupType: exerciseGroupEnum("group_type").notNull().default("none"),

@@ -663,6 +663,8 @@ components:
         weight:
           type: number
           nullable: true
+        isBodyweight:
+          type: boolean
         restSeconds:
           type: integer
         videoUrl:
@@ -675,7 +677,7 @@ components:
           nullable: true
         sortOrder:
           type: integer
-      required: [id, planId, name, category, tags, sets, reps, restSeconds, groupType, sortOrder]
+      required: [id, planId, name, category, tags, sets, reps, isBodyweight, restSeconds, groupType, sortOrder]
 
     CreateExercise:
       type: object
@@ -700,6 +702,8 @@ components:
         weight:
           type: number
           nullable: true
+        isBodyweight:
+          type: boolean
         restSeconds:
           type: integer
         videoUrl:
@@ -712,7 +716,7 @@ components:
           nullable: true
         sortOrder:
           type: integer
-      required: [planId, name, category, tags, sets, reps, restSeconds, groupType, sortOrder]
+      required: [planId, name, category, tags, sets, reps, isBodyweight, restSeconds, groupType, sortOrder]
 
     SessionStatus:
       type: string

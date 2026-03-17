@@ -17,6 +17,7 @@ export interface CreateExercise {
   sets: number;
   reps: number;
   weight?: number | null;
+  isBodyweight: boolean;
   restSeconds: number;
   videoUrl?: string | null;
   groupType: ExerciseGroup;
