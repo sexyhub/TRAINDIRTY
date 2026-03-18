@@ -39,12 +39,17 @@ export default function AdminPage() {
     setLoading(true);
     try {
       const res = await fetch("/api/admin/users", {
+        credentials: "include",
         headers: { Authorization: `Bearer ${authPassword}` },
       });
-      if (!res.ok) throw new Error("Failed to load users");
+      if (!res.ok) {
+        const errData = await res.json().catch(() => ({}));
+        throw new Error(errData.error || "Failed to load users");
+      }
       const data = await res.json();
       setUsers(data);
     } catch (err) {
+      console.error("Load users error:", err);
       setError("Failed to load users");
     } finally {
       setLoading(false);
@@ -77,6 +82,7 @@ export default function AdminPage() {
     try {
       const res = await fetch("/api/admin/users", {
         method: "POST",
+        credentials: "include",
         headers: {
           Authorization: `Bearer ${authPassword}`,
           "Content-Type": "application/json",
@@ -87,13 +93,17 @@ export default function AdminPage() {
           masterPin: pin,
         }),
       });
-      if (!res.ok) throw new Error("Failed to add user");
+      if (!res.ok) {
+        const errData = await res.json().catch(() => ({}));
+        throw new Error(errData.error || "Failed to add user");
+      }
       setName("");
       setPassword("");
       setPin("");
       await loadUsers();
       setError("");
     } catch (err) {
+      console.error("Add user error:", err);
       setError("Failed to add user");
     } finally {
       setSubmitting(false);
@@ -121,13 +131,17 @@ export default function AdminPage() {
 
       const res = await fetch(`/api/admin/users/${userId}`, {
         method: "PUT",
+        credentials: "include",
         headers: {
           Authorization: `Bearer ${authPassword}`,
           "Content-Type": "application/json",
         },
         body: JSON.stringify(body),
       });
-      if (!res.ok) throw new Error("Failed to update user");
+      if (!res.ok) {
+        const errData = await res.json().catch(() => ({}));
+        throw new Error(errData.error || "Failed to update user");
+      }
       setEditingId(null);
       setEditName("");
       setEditPassword("");
@@ -135,6 +149,7 @@ export default function AdminPage() {
       await loadUsers();
       setError("");
     } catch (err) {
+      console.error("Edit user error:", err);
       setError("Failed to update user");
     } finally {
       setSubmitting(false);
@@ -147,11 +162,16 @@ export default function AdminPage() {
     try {
       const res = await fetch(`/api/admin/users/${userId}`, {
         method: "DELETE",
+        credentials: "include",
         headers: { Authorization: `Bearer ${authPassword}` },
       });
-      if (!res.ok) throw new Error("Failed to delete user");
+      if (!res.ok) {
+        const errData = await res.json().catch(() => ({}));
+        throw new Error(errData.error || "Failed to delete user");
+      }
       await loadUsers();
     } catch (err) {
+      console.error("Delete user error:", err);
       setError("Failed to delete user");
     }
   };
