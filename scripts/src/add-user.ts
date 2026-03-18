@@ -15,8 +15,8 @@ if (masterPassword.length < 6) {
   process.exit(1);
 }
 
-if (!/^\d{4,8}$/.test(masterPin)) {
-  console.error("PIN must be 4-8 digits.");
+if (!/^\d{4}$/.test(masterPin)) {
+  console.error("PIN must be exactly 4 digits.");
   process.exit(1);
 }
 
