@@ -4,10 +4,11 @@ import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { motion } from "framer-motion";
-import { User, Save, LogOut } from "lucide-react";
+import { User, Save, LogOut, Settings } from "lucide-react";
 import { useQueryClient } from "@tanstack/react-query";
 import { useEffect } from "react";
 import { cn } from "@/components/layout";
+import { useLocation } from "wouter";
 
 const profileSchema = z.object({
   name: z.string().min(1, "Name is required"),
@@ -18,6 +19,7 @@ const profileSchema = z.object({
 });
 
 export default function ProfilePage() {
+  const [, navigate] = useLocation();
   const queryClient = useQueryClient();
   const { user: authUser, logout } = useAuth();
   const { data: profile, isLoading } = useGetProfile();
@@ -127,6 +129,13 @@ export default function ProfilePage() {
           {updateProfile.isPending ? "SAVING..." : "SAVE CHANGES"} <Save className="w-5 h-5" />
         </button>
       </form>
+
+      <button
+        onClick={() => navigate("/admin")}
+        className="w-full py-4 text-primary font-bold flex items-center justify-center gap-2 bg-primary/10 rounded-xl hover:bg-primary/20 transition-colors"
+      >
+        <Settings className="w-4 h-4" /> MANAGE USERS
+      </button>
 
       <button
         onClick={() => logout()}

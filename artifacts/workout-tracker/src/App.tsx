@@ -7,12 +7,14 @@ import { TimerProvider } from "@/lib/timer-context";
 import { useAuth, AuthProvider } from "@workspace/replit-auth-web";
 import { Loader2, Lock, Eye, EyeOff } from "lucide-react";
 import { useState, useRef } from "react";
+import { useLocation as useWouterLocation } from "wouter";
 
 import Home from "@/pages/home";
 import LogPage from "@/pages/log";
 import StatsPage from "@/pages/stats";
 import TimerPage from "@/pages/timer";
 import ProfilePage from "@/pages/profile";
+import AdminPage from "@/pages/admin";
 import NotFound from "@/pages/not-found";
 
 const queryClient = new QueryClient({
@@ -201,6 +203,7 @@ function Router() {
         <Route path="/stats" component={StatsPage} />
         <Route path="/timer" component={TimerPage} />
         <Route path="/profile" component={ProfilePage} />
+        <Route path="/admin" component={AdminPage} />
         <Route component={NotFound} />
       </Switch>
     </Layout>
@@ -222,8 +225,20 @@ function AppShell() {
 
 function AuthenticatedApp() {
   const { isLoading, isAuthenticated } = useAuth();
+  const [location] = useWouterLocation();
 
   if (isLoading) return <LoadingScreen />;
+
+  if (location === "/admin" || location?.startsWith("/admin")) {
+    return (
+      <TooltipProvider>
+        <WouterRouter base={import.meta.env.BASE_URL.replace(/\/$/, "")}>
+          <AdminPage />
+        </WouterRouter>
+      </TooltipProvider>
+    );
+  }
+
   if (!isAuthenticated) return <LoginScreen />;
 
   return <AppShell />;
