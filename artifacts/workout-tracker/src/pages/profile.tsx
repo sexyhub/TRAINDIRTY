@@ -69,7 +69,7 @@ export default function ProfilePage() {
         </div>
         <div>
           <h1 className="text-2xl font-display font-bold uppercase">{profile?.name || authUser?.firstName || 'Athlete'}</h1>
-          <p className="text-muted-foreground text-sm tracking-widest uppercase">{authUser?.email || 'Member'}</p>
+          <p className="text-muted-foreground text-sm tracking-widest uppercase">Member</p>
         </div>
       </div>
 

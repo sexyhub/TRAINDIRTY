@@ -114,11 +114,12 @@ The project is configured for single-project Vercel deployment:
 
 ### Auth behavior
 
-- **Email + Password auth**: Users register/login with email and password. Passwords are hashed with `crypto.scrypt` (Node.js built-in). Sessions are stored in the `sessions` DB table with `HttpOnly` cookies.
-- **On Replit** (with `REPL_ID` set): Replit OIDC login is also available alongside email auth
-- Auth routes: `POST /api/auth/register`, `POST /api/auth/login`, `POST /api/auth/logout`, `GET /api/auth/user`
+- **Master Password + PIN auth**: Users register/login with a master password (6+ chars) and a PIN (4-8 digits). Each unique (password, PIN) combination creates a separate account with its own data.
+- Credentials are hashed with `crypto.scrypt` (Node.js built-in). A deterministic SHA-256 lookup hash of (password+PIN) is stored for user lookup; a separate salted scrypt hash is stored for verification.
+- Sessions are stored in the `sessions` DB table with `HttpOnly` cookies.
+- Auth routes: `POST /api/auth/register` (name, masterPassword, masterPin), `POST /api/auth/login` (masterPassword, masterPin), `POST /api/auth/logout`, `GET /api/auth/user`
 - Frontend uses `AuthProvider` context (in `lib/replit-auth-web`) for shared auth state across all components
-- The `usersTable` has a `passwordHash` column for email auth users
+- The `usersTable` has `lookupHash` and `credentialHash` columns for credential storage
 
 ### `scripts` (`@workspace/scripts`)
 

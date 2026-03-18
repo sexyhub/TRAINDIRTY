@@ -1,4 +1,4 @@
-modules = ["nodejs-24"]
+modules = ["nodejs-24", "postgresql-16"]
 
 [[artifacts]]
 id = "artifacts/api-server"
@@ -66,3 +66,6 @@ timeoutMs = 20000
 
 [userenv.shared]
 NEON_DATABASE_URL = "postgresql://neondb_owner:npg_w85XWlcGiZad@ep-soft-sea-a4tpzxn5-pooler.us-east-1.aws.neon.tech/neondb?sslmode=require&channel_binding=require"
+
+[nix]
+channel = "stable-25_05"

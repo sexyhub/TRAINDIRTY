@@ -5,7 +5,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { Layout } from "@/components/layout";
 import { TimerProvider } from "@/lib/timer-context";
 import { useAuth, AuthProvider } from "@workspace/replit-auth-web";
-import { Dumbbell, Loader2, Mail, Lock, Eye, EyeOff } from "lucide-react";
+import { Dumbbell, Loader2, Lock, Hash, Eye, EyeOff, UserPlus } from "lucide-react";
 import { useState } from "react";
 
 import Home from "@/pages/home";
@@ -27,8 +27,9 @@ const queryClient = new QueryClient({
 function LoginScreen() {
   const { login, register } = useAuth();
   const [mode, setMode] = useState<"login" | "register">("login");
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
+  const [name, setName] = useState("");
+  const [masterPassword, setMasterPassword] = useState("");
+  const [masterPin, setMasterPin] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
@@ -38,25 +39,28 @@ function LoginScreen() {
     setError("");
     setLoading(true);
 
-    const result =
-      mode === "login"
-        ? await login(email, password)
-        : await register(email, password);
+    try {
+      const result =
+        mode === "login"
+          ? await login(masterPassword, masterPin)
+          : await register(name, masterPassword, masterPin);
 
-    if (result.error) {
-      setError(result.error);
+      if (result.error) {
+        setError(result.error);
+      }
+    } finally {
+      setLoading(false);
     }
-    setLoading(false);
   };
 
   return (
     <div className="min-h-screen bg-black flex flex-col items-center justify-center gap-8 p-8">
       <div className="flex flex-col items-center gap-4">
-        <div className="w-20 h-20 rounded-3xl bg-primary flex items-center justify-center shadow-2xl shadow-primary/30">
-          <Dumbbell className="w-10 h-10 text-primary-foreground" />
+        <div className="w-20 h-20 rounded-3xl overflow-hidden shadow-2xl shadow-primary/30">
+          <img src="/favicon.png" alt="Logo" className="w-full h-full object-cover" />
         </div>
         <h1 className="text-3xl font-black tracking-tight text-white">
-          Workout Tracker
+          TRAIN DIRTY
         </h1>
         <p className="text-muted-foreground text-center text-sm max-w-xs">
           Track your lifts, hit your PRs, and build consistency — one session at
@@ -89,26 +93,28 @@ function LoginScreen() {
         </div>
 
         <div className="space-y-3">
-          <div className="relative">
-            <Mail className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
-            <input
-              type="email"
-              placeholder="Email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              required
-              autoComplete="email"
-              className="w-full bg-card border border-border rounded-xl pl-12 pr-4 py-4 text-white placeholder:text-muted-foreground focus:outline-none focus:border-primary transition-colors"
-            />
-          </div>
+          {mode === "register" && (
+            <div className="relative">
+              <UserPlus className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
+              <input
+                type="text"
+                placeholder="Your Name"
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                required
+                autoComplete="name"
+                className="w-full bg-card border border-border rounded-xl pl-12 pr-4 py-4 text-white placeholder:text-muted-foreground focus:outline-none focus:border-primary transition-colors"
+              />
+            </div>
+          )}
 
           <div className="relative">
             <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
             <input
               type={showPassword ? "text" : "password"}
-              placeholder="Password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
+              placeholder="Master Password"
+              value={masterPassword}
+              onChange={(e) => setMasterPassword(e.target.value)}
               required
               minLength={6}
               autoComplete={
@@ -127,6 +133,26 @@ function LoginScreen() {
                 <Eye className="w-5 h-5" />
               )}
             </button>
+          </div>
+
+          <div className="relative">
+            <Hash className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
+            <input
+              type="password"
+              inputMode="numeric"
+              pattern="\d{4,8}"
+              placeholder="Master PIN (4-8 digits)"
+              value={masterPin}
+              onChange={(e) => {
+                const v = e.target.value.replace(/\D/g, "").slice(0, 8);
+                setMasterPin(v);
+              }}
+              required
+              minLength={4}
+              maxLength={8}
+              autoComplete="off"
+              className="w-full bg-card border border-border rounded-xl pl-12 pr-4 py-4 text-white placeholder:text-muted-foreground focus:outline-none focus:border-primary transition-colors tracking-[0.3em]"
+            />
           </div>
         </div>
 
@@ -149,6 +175,13 @@ function LoginScreen() {
             "Create Account"
           )}
         </button>
+
+        {mode === "register" && (
+          <p className="text-muted-foreground text-xs text-center leading-relaxed">
+            Remember your master password and PIN — they are your only way to
+            access your account. They cannot be recovered.
+          </p>
+        )}
       </form>
     </div>
   );
