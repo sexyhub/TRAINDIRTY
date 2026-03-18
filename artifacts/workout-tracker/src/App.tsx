@@ -130,6 +130,13 @@ function LoginScreen() {
 
       <form onSubmit={handleSubmit} className="w-full max-w-xs space-y-6">
         <div className="space-y-5">
+          <div className="space-y-2">
+            <p className="text-xs text-muted-foreground uppercase tracking-widest font-bold text-center">
+              Master PIN
+            </p>
+            <PinBoxes value={masterPin} onChange={setMasterPin} />
+          </div>
+
           <div className="relative">
             <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
             <input
@@ -152,13 +159,6 @@ function LoginScreen() {
                 <Eye className="w-5 h-5" />
               )}
             </button>
-          </div>
-
-          <div className="space-y-2">
-            <p className="text-xs text-muted-foreground uppercase tracking-widest font-bold text-center">
-              Master PIN
-            </p>
-            <PinBoxes value={masterPin} onChange={setMasterPin} />
           </div>
         </div>
 
