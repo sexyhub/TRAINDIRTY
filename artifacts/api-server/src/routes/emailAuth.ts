@@ -29,14 +29,6 @@ function scryptHash(value: string, salt: string): Promise<string> {
   });
 }
 
-async function createCredentialHash(
-  masterPassword: string,
-  masterPin: string,
-): Promise<string> {
-  const salt = crypto.randomBytes(16).toString("hex");
-  return scryptHash(`${masterPassword}::${masterPin}`, salt);
-}
-
 async function verifyCredential(
   masterPassword: string,
   masterPin: string,
@@ -56,81 +48,6 @@ function setSessionCookie(res: Response, sid: string) {
     maxAge: SESSION_TTL,
   });
 }
-
-router.post("/auth/register", async (req: Request, res: Response) => {
-  const { masterPassword, masterPin, name } = req.body ?? {};
-
-  if (
-    !masterPassword ||
-    !masterPin ||
-    !name ||
-    typeof masterPassword !== "string" ||
-    typeof masterPin !== "string" ||
-    typeof name !== "string"
-  ) {
-    res
-      .status(400)
-      .json({ error: "Name, master password, and PIN are required." });
-    return;
-  }
-
-  if (masterPassword.length < 6) {
-    res
-      .status(400)
-      .json({ error: "Master password must be at least 6 characters." });
-    return;
-  }
-
-  if (!/^\d{4,8}$/.test(masterPin)) {
-    res.status(400).json({ error: "PIN must be 4-8 digits." });
-    return;
-  }
-
-  const trimmedName = name.trim();
-  if (trimmedName.length < 1) {
-    res.status(400).json({ error: "Name is required." });
-    return;
-  }
-
-  const lookupHash = makeLookupHash(masterPassword, masterPin);
-
-  const existing = await db
-    .select({ id: usersTable.id })
-    .from(usersTable)
-    .where(eq(usersTable.lookupHash, lookupHash));
-
-  if (existing.length > 0) {
-    res
-      .status(409)
-      .json({ error: "An account with this password and PIN already exists." });
-    return;
-  }
-
-  const credentialHash = await createCredentialHash(masterPassword, masterPin);
-
-  const [user] = await db
-    .insert(usersTable)
-    .values({
-      lookupHash,
-      credentialHash,
-      firstName: trimmedName,
-    })
-    .returning();
-
-  const sessionData: SessionData = {
-    user: {
-      id: user.id,
-      email: user.email,
-      firstName: user.firstName,
-      lastName: user.lastName,
-      profileImageUrl: user.profileImageUrl,
-    },
-  };
-
-  const sid = await createSession(sessionData);
-  setSessionCookie(res, sid);
-  res.json({ user: sessionData.user });
-});
 
 router.post("/auth/login", async (req: Request, res: Response) => {
   const { masterPassword, masterPin } = req.body ?? {};

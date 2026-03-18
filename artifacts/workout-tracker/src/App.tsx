@@ -5,7 +5,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { Layout } from "@/components/layout";
 import { TimerProvider } from "@/lib/timer-context";
 import { useAuth, AuthProvider } from "@workspace/replit-auth-web";
-import { Dumbbell, Loader2, Lock, Hash, Eye, EyeOff, UserPlus } from "lucide-react";
+import { Loader2, Lock, Hash, Eye, EyeOff } from "lucide-react";
 import { useState } from "react";
 
 import Home from "@/pages/home";
@@ -25,9 +25,7 @@ const queryClient = new QueryClient({
 });
 
 function LoginScreen() {
-  const { login, register } = useAuth();
-  const [mode, setMode] = useState<"login" | "register">("login");
-  const [name, setName] = useState("");
+  const { login } = useAuth();
   const [masterPassword, setMasterPassword] = useState("");
   const [masterPin, setMasterPin] = useState("");
   const [showPassword, setShowPassword] = useState(false);
@@ -40,11 +38,7 @@ function LoginScreen() {
     setLoading(true);
 
     try {
-      const result =
-        mode === "login"
-          ? await login(masterPassword, masterPin)
-          : await register(name, masterPassword, masterPin);
-
+      const result = await login(masterPassword, masterPin);
       if (result.error) {
         setError(result.error);
       }
@@ -63,51 +57,12 @@ function LoginScreen() {
           TRAIN DIRTY
         </h1>
         <p className="text-muted-foreground text-center text-sm max-w-xs">
-          Track your lifts, hit your PRs, and build consistency — one session at
-          a time.
+          Enter your credentials to continue.
         </p>
       </div>
 
       <form onSubmit={handleSubmit} className="w-full max-w-xs space-y-4">
-        <div className="flex rounded-xl bg-card border border-border overflow-hidden">
-          <button
-            type="button"
-            onClick={() => {
-              setMode("login");
-              setError("");
-            }}
-            className={`flex-1 py-3 text-sm font-bold uppercase tracking-wider transition-colors ${mode === "login" ? "bg-primary text-primary-foreground" : "text-muted-foreground"}`}
-          >
-            Log In
-          </button>
-          <button
-            type="button"
-            onClick={() => {
-              setMode("register");
-              setError("");
-            }}
-            className={`flex-1 py-3 text-sm font-bold uppercase tracking-wider transition-colors ${mode === "register" ? "bg-primary text-primary-foreground" : "text-muted-foreground"}`}
-          >
-            Sign Up
-          </button>
-        </div>
-
         <div className="space-y-3">
-          {mode === "register" && (
-            <div className="relative">
-              <UserPlus className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
-              <input
-                type="text"
-                placeholder="Your Name"
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-                required
-                autoComplete="name"
-                className="w-full bg-card border border-border rounded-xl pl-12 pr-4 py-4 text-white placeholder:text-muted-foreground focus:outline-none focus:border-primary transition-colors"
-              />
-            </div>
-          )}
-
           <div className="relative">
             <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
             <input
@@ -116,10 +71,7 @@ function LoginScreen() {
               value={masterPassword}
               onChange={(e) => setMasterPassword(e.target.value)}
               required
-              minLength={6}
-              autoComplete={
-                mode === "login" ? "current-password" : "new-password"
-              }
+              autoComplete="current-password"
               className="w-full bg-card border border-border rounded-xl pl-12 pr-12 py-4 text-white placeholder:text-muted-foreground focus:outline-none focus:border-primary transition-colors"
             />
             <button
@@ -141,7 +93,7 @@ function LoginScreen() {
               type="password"
               inputMode="numeric"
               pattern="\d{4,8}"
-              placeholder="Master PIN (4-8 digits)"
+              placeholder="Master PIN"
               value={masterPin}
               onChange={(e) => {
                 const v = e.target.value.replace(/\D/g, "").slice(0, 8);
@@ -169,19 +121,10 @@ function LoginScreen() {
         >
           {loading ? (
             <Loader2 className="w-5 h-5 animate-spin mx-auto" />
-          ) : mode === "login" ? (
-            "Log In"
           ) : (
-            "Create Account"
+            "Log In"
           )}
         </button>
-
-        {mode === "register" && (
-          <p className="text-muted-foreground text-xs text-center leading-relaxed">
-            Remember your master password and PIN — they are your only way to
-            access your account. They cannot be recovered.
-          </p>
-        )}
       </form>
     </div>
   );

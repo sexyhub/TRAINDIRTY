@@ -9,7 +9,6 @@ interface AuthState {
   isLoading: boolean;
   isAuthenticated: boolean;
   login: (masterPassword: string, masterPin: string) => Promise<{ error?: string }>;
-  register: (name: string, masterPassword: string, masterPin: string) => Promise<{ error?: string }>;
   logout: () => Promise<void>;
 }
 
@@ -62,23 +61,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   }, []);
 
-  const register = useCallback(async (name: string, masterPassword: string, masterPin: string) => {
-    try {
-      const res = await fetch("/api/auth/register", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        credentials: "include",
-        body: JSON.stringify({ name, masterPassword, masterPin }),
-      });
-      const data = await res.json();
-      if (!res.ok) return { error: data.error || "Registration failed" };
-      setUser(data.user);
-      return {};
-    } catch {
-      return { error: "Network error. Please try again." };
-    }
-  }, []);
-
   const logout = useCallback(async () => {
     try {
       await fetch("/api/auth/logout", {
@@ -96,7 +78,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     isLoading,
     isAuthenticated: !!user,
     login,
-    register,
     logout,
   };
 
