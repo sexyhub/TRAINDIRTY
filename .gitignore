@@ -48,6 +48,6 @@ Thumbs.db
 .cache/
 .local/
 
-# Vercel build artifacts
-api/handler.cjs
-/public
+# Next.js
+.next/
+out/

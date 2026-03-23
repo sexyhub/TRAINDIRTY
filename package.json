@@ -1,16 +1,42 @@
 {
-  "name": "workspace",
-  "version": "0.0.0",
-  "license": "MIT",
-  "scripts": {
-    "preinstall": "node preinstall.js",
-    "build": "pnpm run typecheck && pnpm -r --if-present run build",
-    "typecheck:libs": "tsc --build",
-    "typecheck": "pnpm run typecheck:libs && pnpm -r --filter \"./artifacts/**\" --filter \"./scripts\" --if-present run typecheck"
-  },
+  "name": "train-dirty",
+  "version": "1.0.0",
   "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "next dev --hostname 0.0.0.0 --port ${PORT:-3000}",
+    "build": "next build",
+    "start": "next start --hostname 0.0.0.0 --port ${PORT:-3000}"
+  },
+  "dependencies": {
+    "@hookform/resolvers": "^3.10.0",
+    "@tailwindcss/postcss": "^4.1.0",
+    "@tailwindcss/typography": "^0.5.15",
+    "@tanstack/react-query": "^5.90.21",
+    "class-variance-authority": "^0.7.1",
+    "clsx": "2.1.1",
+    "date-fns": "^3.6.0",
+    "drizzle-orm": "^0.45.1",
+    "drizzle-zod": "^0.8.3",
+    "framer-motion": "12.35.1",
+    "lucide-react": "0.545.0",
+    "next": "^15.3.3",
+    "openid-client": "^6.8.2",
+    "pg": "^8.20.0",
+    "react": "19.1.0",
+    "react-dom": "19.1.0",
+    "react-hook-form": "^7.71.2",
+    "recharts": "^2.15.4",
+    "tailwind-merge": "3.5.0",
+    "tailwindcss": "^4.1.14",
+    "tw-animate-css": "^1.4.0",
+    "zod": "3.25.76"
+  },
   "devDependencies": {
-    "typescript": "~5.9.2",
-    "prettier": "^3.8.1"
+    "@types/node": "^25.3.3",
+    "@types/pg": "^8.18.0",
+    "@types/react": "^19.2.0",
+    "@types/react-dom": "^19.2.0",
+    "typescript": "^5.8.3"
   }
 }

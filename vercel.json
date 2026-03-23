@@ -1,4 +1,0 @@
-{
-  "installCommand": "pnpm install",
-  "buildCommand": "pnpm --filter @workspace/api-server run build && pnpm --filter @workspace/workout-tracker run build && node scripts/vercel-output.mjs"
-}

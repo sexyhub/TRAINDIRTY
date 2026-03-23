@@ -1,0 +1,26 @@
+kind = "web"
+previewPath = "/"
+title = "Train Dirty"
+version = "1.0.0"
+id = "artifacts/web"
+
+[[integratedSkills]]
+name = "react-vite"
+version = "1.0.0"
+
+[[services]]
+name = "web"
+paths = ["/", "/api"]
+localPort = 3000
+
+[services.development]
+run = "pnpm --dir /home/runner/workspace run dev"
+
+[services.production]
+build = "pnpm --dir /home/runner/workspace run build"
+
+[services.production.run]
+args = ["pnpm", "--dir", "/home/runner/workspace", "run", "start"]
+
+[services.env]
+PORT = "3000"

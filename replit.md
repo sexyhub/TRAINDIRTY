@@ -1,93 +1,64 @@
-# Workspace
+# Train Dirty - Workout Tracker
 
 ## Overview
 
-pnpm workspace monorepo using TypeScript. The main application is a Next.js 15 App Router workout tracker ("Train Dirty").
+Next.js 15 App Router workout tracking application with AMOLED dark theme. All code lives at the root directory (no `src` folder).
 
 ## Stack
 
-- **Monorepo tool**: pnpm workspaces
-- **Node.js version**: 24
-- **Package manager**: pnpm
-- **TypeScript version**: 5.8
-- **Frontend + API**: Next.js 15 App Router (no `src` folder)
-- **Database**: PostgreSQL (Neon) via `pg` driver (raw SQL)
+- **Framework**: Next.js 15 App Router
+- **Language**: TypeScript
+- **Database**: PostgreSQL (Neon) via Drizzle ORM + `pg` driver
 - **Styling**: TailwindCSS v4 with `@tailwindcss/postcss`, AMOLED pure black theme
 - **Fonts**: Inter (body), Outfit (display headings)
-- **UI Components**: Radix UI primitives, Lucide icons
-- **State**: React Query (TanStack Query v5), custom hooks
-- **API codegen**: Orval (from OpenAPI spec) generates React Query hooks
+- **UI**: Radix UI primitives, Lucide icons, Framer Motion
+- **State**: TanStack Query v5, Orval-generated React Query hooks
+- **Auth**: Master Password + PIN (scrypt hashing, session cookies)
 
 ## Structure
 
 ```text
-workspace/
-├── artifacts/
-│   ├── workout-tracker/       # Next.js 15 App Router (main app)
-│   │   ├── app/               # Pages and API routes
-│   │   │   ├── layout.tsx     # Root layout with providers
-│   │   │   ├── page.tsx       # Home page
-│   │   │   ├── log/page.tsx   # Workout log page
-│   │   │   ├── timer/page.tsx # Rest timer page
-│   │   │   ├── stats/page.tsx # Statistics page
-│   │   │   ├── profile/page.tsx # Profile/auth page
-│   │   │   └── api/           # API route handlers
-│   │   │       ├── healthz/route.ts
-│   │   │       ├── auth/      # Auth routes (user, login, logout)
-│   │   │       ├── workout-plans/route.ts
-│   │   │       ├── exercises/route.ts
-│   │   │       ├── sessions/  # Sessions CRUD + sets
-│   │   │       ├── stats/     # Stats endpoints
-│   │   │       ├── profile/route.ts
-│   │   │       └── admin/     # Admin routes
-│   │   ├── components/        # Shared UI components
-│   │   ├── lib/               # Utilities, auth, providers, timer context
-│   │   ├── next.config.ts     # Next.js config
-│   │   ├── postcss.config.mjs # PostCSS with TailwindCSS
-│   │   └── tsconfig.json
-│   ├── api-server/            # Proxy server (forwards /api to Next.js)
-│   │   └── proxy.mjs          # HTTP reverse proxy on port 8080 → 19273
-│   └── mockup-sandbox/        # Component preview server (design)
+/
+├── app/                    # Next.js App Router
+│   ├── layout.tsx          # Root layout with providers
+│   ├── globals.css         # Global styles + Tailwind
+│   ├── page.tsx            # Home page
+│   ├── log/page.tsx        # Workout log
+│   ├── timer/page.tsx      # Rest timer
+│   ├── stats/page.tsx      # Statistics
+│   ├── profile/page.tsx    # Profile/auth
+│   └── api/                # API route handlers
+│       ├── healthz/
+│       ├── auth/           # Auth routes (user, login, logout)
+│       ├── workout-plans/
+│       ├── exercises/
+│       ├── sessions/       # Sessions CRUD + sets
+│       ├── stats/          # Stats endpoints
+│       ├── profile/
+│       └── admin/
+├── components/             # Shared UI components
 ├── lib/
-│   ├── api-spec/              # OpenAPI spec + Orval codegen config
-│   ├── api-client-react/      # Generated React Query hooks
-│   ├── api-zod/               # Generated Zod schemas
-│   └── db/                    # Drizzle ORM schema + DB connection
-├── scripts/                   # Utility scripts
-└── package.json               # Root package
+│   ├── auth.ts             # Session/auth utilities
+│   ├── utils.ts            # cn() utility
+│   ├── timer-context.tsx   # Timer React context
+│   ├── providers.tsx       # QueryClientProvider wrapper
+│   ├── db/                 # Database layer (Drizzle ORM)
+│   │   ├── index.ts        # Pool + Drizzle instance
+│   │   └── schema/         # Table definitions
+│   ├── api-client-react/   # Generated React Query hooks (Orval)
+│   └── api-zod/            # Generated Zod schemas (Orval)
+├── public/                 # Static assets
+├── next.config.ts
+├── postcss.config.mjs
+├── tsconfig.json
+├── package.json
+└── artifacts/web/          # Minimal artifact registration (just .replit-artifact/)
 ```
 
-## Next.js App Details
+## Key Details
 
-### Auth
-- Master Password + PIN authentication (no OIDC)
-- Credentials hashed with `crypto.scrypt` (deterministic SHA-256 lookup hash + salted scrypt verification hash)
-- Sessions stored in DB `sessions` table, `HttpOnly` cookie named "sid", TTL 7 days
-- Admin password: "Malakar@22"
-- `getSessionIdFromRequest(request)` for API route handlers; `getSessionIdFromCookies()` for server components
-
-### API Routes
-All API routes are Next.js route handlers in `app/api/*/route.ts`. They use raw SQL via `pg` Pool (connection string from `NEON_DATABASE_URL`).
-
-### Frontend
-- All pages use `"use client"` directive
-- Client-side routing via `next/navigation` (`useRouter`, `usePathname`)
-- API client hooks generated by Orval with `baseUrl: "/api"`
-- AMOLED pure black background (#000000), Inter + Outfit fonts
-
-### Routing Architecture
-The Replit proxy routes `/api` to the api-server artifact (port 8080), which runs a reverse proxy forwarding all requests to the Next.js server (port 19273). All other routes go directly to the workout-tracker artifact.
-
-## Database
-
-PostgreSQL hosted on Neon. Connection string in `NEON_DATABASE_URL` environment variable.
-
-Tables: `users`, `sessions`, `workout_plans`, `exercises`, `workout_sessions`, `workout_sets`
-
-## Scripts
-
-Run scripts via `pnpm --filter @workspace/scripts run <script>`.
-
-## Codegen
-
-Run `pnpm --filter @workspace/api-spec run codegen` to regenerate API client hooks from OpenAPI spec.
+- **Database**: Connection via `NEON_DATABASE_URL` env var
+- **Auth**: Admin password "Malakar@22", session cookie "sid", TTL 7 days
+- **All pages**: Use `"use client"` directive with client-side routing
+- **API imports**: `@/lib/db` for database, `@/lib/api-client-react` for hooks, `@/lib/api-zod` for validation schemas
+- **Dev server**: Runs on port from `PORT` env var (default 3000)
