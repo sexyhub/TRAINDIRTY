@@ -2,125 +2,92 @@
 
 ## Overview
 
-pnpm workspace monorepo using TypeScript. Each package manages its own dependencies.
+pnpm workspace monorepo using TypeScript. The main application is a Next.js 15 App Router workout tracker ("Train Dirty").
 
 ## Stack
 
 - **Monorepo tool**: pnpm workspaces
 - **Node.js version**: 24
 - **Package manager**: pnpm
-- **TypeScript version**: 5.9
-- **API framework**: Express 5
-- **Database**: PostgreSQL + Drizzle ORM
-- **Validation**: Zod (`zod/v4`), `drizzle-zod`
-- **API codegen**: Orval (from OpenAPI spec)
-- **Build**: esbuild (CJS bundle)
+- **TypeScript version**: 5.8
+- **Frontend + API**: Next.js 15 App Router (no `src` folder)
+- **Database**: PostgreSQL (Neon) via `pg` driver (raw SQL)
+- **Styling**: TailwindCSS v4 with `@tailwindcss/postcss`, AMOLED pure black theme
+- **Fonts**: Inter (body), Outfit (display headings)
+- **UI Components**: Radix UI primitives, Lucide icons
+- **State**: React Query (TanStack Query v5), custom hooks
+- **API codegen**: Orval (from OpenAPI spec) generates React Query hooks
 
 ## Structure
 
 ```text
-artifacts-monorepo/
-├── artifacts/              # Deployable applications
-│   └── api-server/         # Express API server
-├── lib/                    # Shared libraries
-│   ├── api-spec/           # OpenAPI spec + Orval codegen config
-│   ├── api-client-react/   # Generated React Query hooks
-│   ├── api-zod/            # Generated Zod schemas from OpenAPI
-│   └── db/                 # Drizzle ORM schema + DB connection
-├── scripts/                # Utility scripts (single workspace package)
-│   └── src/                # Individual .ts scripts, run via `pnpm --filter @workspace/scripts run <script>`
-├── pnpm-workspace.yaml     # pnpm workspace (artifacts/*, lib/*, lib/integrations/*, scripts)
-├── tsconfig.base.json      # Shared TS options (composite, bundler resolution, es2022)
-├── tsconfig.json           # Root TS project references
-└── package.json            # Root package with hoisted devDeps
+workspace/
+├── artifacts/
+│   ├── workout-tracker/       # Next.js 15 App Router (main app)
+│   │   ├── app/               # Pages and API routes
+│   │   │   ├── layout.tsx     # Root layout with providers
+│   │   │   ├── page.tsx       # Home page
+│   │   │   ├── log/page.tsx   # Workout log page
+│   │   │   ├── timer/page.tsx # Rest timer page
+│   │   │   ├── stats/page.tsx # Statistics page
+│   │   │   ├── profile/page.tsx # Profile/auth page
+│   │   │   └── api/           # API route handlers
+│   │   │       ├── healthz/route.ts
+│   │   │       ├── auth/      # Auth routes (user, login, logout)
+│   │   │       ├── workout-plans/route.ts
+│   │   │       ├── exercises/route.ts
+│   │   │       ├── sessions/  # Sessions CRUD + sets
+│   │   │       ├── stats/     # Stats endpoints
+│   │   │       ├── profile/route.ts
+│   │   │       └── admin/     # Admin routes
+│   │   ├── components/        # Shared UI components
+│   │   ├── lib/               # Utilities, auth, providers, timer context
+│   │   ├── next.config.ts     # Next.js config
+│   │   ├── postcss.config.mjs # PostCSS with TailwindCSS
+│   │   └── tsconfig.json
+│   ├── api-server/            # Proxy server (forwards /api to Next.js)
+│   │   └── proxy.mjs          # HTTP reverse proxy on port 8080 → 19273
+│   └── mockup-sandbox/        # Component preview server (design)
+├── lib/
+│   ├── api-spec/              # OpenAPI spec + Orval codegen config
+│   ├── api-client-react/      # Generated React Query hooks
+│   ├── api-zod/               # Generated Zod schemas
+│   └── db/                    # Drizzle ORM schema + DB connection
+├── scripts/                   # Utility scripts
+└── package.json               # Root package
 ```
 
-## TypeScript & Composite Projects
+## Next.js App Details
 
-Every package extends `tsconfig.base.json` which sets `composite: true`. The root `tsconfig.json` lists all packages as project references. This means:
+### Auth
+- Master Password + PIN authentication (no OIDC)
+- Credentials hashed with `crypto.scrypt` (deterministic SHA-256 lookup hash + salted scrypt verification hash)
+- Sessions stored in DB `sessions` table, `HttpOnly` cookie named "sid", TTL 7 days
+- Admin password: "Malakar@22"
+- `getSessionIdFromRequest(request)` for API route handlers; `getSessionIdFromCookies()` for server components
 
-- **Always typecheck from the root** — run `pnpm run typecheck` (which runs `tsc --build --emitDeclarationOnly`). This builds the full dependency graph so that cross-package imports resolve correctly. Running `tsc` inside a single package will fail if its dependencies haven't been built yet.
-- **`emitDeclarationOnly`** — we only emit `.d.ts` files during typecheck; actual JS bundling is handled by esbuild/tsx/vite...etc, not `tsc`.
-- **Project references** — when package A depends on package B, A's `tsconfig.json` must list B in its `references` array. `tsc --build` uses this to determine build order and skip up-to-date packages.
+### API Routes
+All API routes are Next.js route handlers in `app/api/*/route.ts`. They use raw SQL via `pg` Pool (connection string from `NEON_DATABASE_URL`).
 
-## Root Scripts
+### Frontend
+- All pages use `"use client"` directive
+- Client-side routing via `next/navigation` (`useRouter`, `usePathname`)
+- API client hooks generated by Orval with `baseUrl: "/api"`
+- AMOLED pure black background (#000000), Inter + Outfit fonts
 
-- `pnpm run build` — runs `typecheck` first, then recursively runs `build` in all packages that define it
-- `pnpm run typecheck` — runs `tsc --build --emitDeclarationOnly` using project references
+### Routing Architecture
+The Replit proxy routes `/api` to the api-server artifact (port 8080), which runs a reverse proxy forwarding all requests to the Next.js server (port 19273). All other routes go directly to the workout-tracker artifact.
 
-## Packages
+## Database
 
-### `artifacts/api-server` (`@workspace/api-server`)
+PostgreSQL hosted on Neon. Connection string in `NEON_DATABASE_URL` environment variable.
 
-Express 5 API server. Routes live in `src/routes/` and use `@workspace/api-zod` for request and response validation and `@workspace/db` for persistence.
+Tables: `users`, `sessions`, `workout_plans`, `exercises`, `workout_sessions`, `workout_sets`
 
-- Entry: `src/index.ts` — reads `PORT`, starts Express
-- App setup: `src/app.ts` — mounts CORS, JSON/urlencoded parsing, routes at `/api`
-- Routes: `src/routes/index.ts` mounts sub-routers; `src/routes/health.ts` exposes `GET /health` (full path: `/api/health`)
-- Depends on: `@workspace/db`, `@workspace/api-zod`
-- `pnpm --filter @workspace/api-server run dev` — run the dev server
-- `pnpm --filter @workspace/api-server run build` — production esbuild bundles: `dist/index.cjs` (Replit) + `dist/handler.cjs` (Vercel serverless)
-- Build bundles an allowlist of deps (express, cors, pg, drizzle-orm, zod, openid-client, cookie-parser, etc.) and externalizes the rest
+## Scripts
 
-### `lib/db` (`@workspace/db`)
+Run scripts via `pnpm --filter @workspace/scripts run <script>`.
 
-Database layer using Drizzle ORM with PostgreSQL. Exports a Drizzle client instance and schema models.
+## Codegen
 
-- `src/index.ts` — creates a `Pool` + Drizzle instance, exports schema
-- `src/schema/index.ts` — barrel re-export of all models
-- `src/schema/<modelname>.ts` — table definitions with `drizzle-zod` insert schemas (no models definitions exist right now)
-- `drizzle.config.ts` — Drizzle Kit config (requires `DATABASE_URL`, automatically provided by Replit)
-- Exports: `.` (pool, db, schema), `./schema` (schema only)
-
-Production migrations are handled by Replit when publishing. In development, we just use `pnpm --filter @workspace/db run push`, and we fallback to `pnpm --filter @workspace/db run push-force`.
-
-### `lib/api-spec` (`@workspace/api-spec`)
-
-Owns the OpenAPI 3.1 spec (`openapi.yaml`) and the Orval config (`orval.config.ts`). Running codegen produces output into two sibling packages:
-
-1. `lib/api-client-react/src/generated/` — React Query hooks + fetch client
-2. `lib/api-zod/src/generated/` — Zod schemas
-
-Run codegen: `pnpm --filter @workspace/api-spec run codegen`
-
-### `lib/api-zod` (`@workspace/api-zod`)
-
-Generated Zod schemas from the OpenAPI spec (e.g. `HealthCheckResponse`). Used by `api-server` for response validation.
-
-### `lib/api-client-react` (`@workspace/api-client-react`)
-
-Generated React Query hooks and fetch client from the OpenAPI spec (e.g. `useHealthCheck`, `healthCheck`).
-
-## Vercel Deployment
-
-The project is configured for single-project Vercel deployment:
-
-- **`vercel.json`** — build command, output directory, and rewrites:
-  - `/api/*` → `api/index.js` serverless function (the Express app)
-  - `/*` → `index.html` SPA fallback
-- **`api/index.js`** — thin Vercel serverless entry point; requires `./handler.cjs` which is copied during build
-- **`api/handler.cjs`** — generated build artifact (git-ignored); created by the build step via `cp artifacts/api-server/dist/handler.cjs api/handler.cjs`
-- **Build produces two API bundles**: `dist/index.cjs` (Replit server) and `dist/handler.cjs` (Vercel serverless, no `listen()`)
-
-### Deploying to Vercel
-
-1. Push code to GitHub
-2. Import the repo in Vercel (Framework Preset: **Other**)
-3. Vercel will use settings from `vercel.json` automatically
-4. Add environment variables in Vercel dashboard:
-   - `NEON_DATABASE_URL` — your Neon PostgreSQL connection string
-   - `VITE_REQUIRE_AUTH` — set to `"true"` to enable the Replit auth login gate (requires `REPL_ID` env var too); leave unset to skip auth
-5. Deploy
-
-### Auth behavior
-
-- **Master Password + PIN auth**: Users register/login with a master password (6+ chars) and a PIN (4-8 digits). Each unique (password, PIN) combination creates a separate account with its own data.
-- Credentials are hashed with `crypto.scrypt` (Node.js built-in). A deterministic SHA-256 lookup hash of (password+PIN) is stored for user lookup; a separate salted scrypt hash is stored for verification.
-- Sessions are stored in the `sessions` DB table with `HttpOnly` cookies.
-- Auth routes: `POST /api/auth/register` (name, masterPassword, masterPin), `POST /api/auth/login` (masterPassword, masterPin), `POST /api/auth/logout`, `GET /api/auth/user`
-- Frontend uses `AuthProvider` context (in `lib/replit-auth-web`) for shared auth state across all components
-- The `usersTable` has `lookupHash` and `credentialHash` columns for credential storage
-
-### `scripts` (`@workspace/scripts`)
-
-Utility scripts package. Each script is a `.ts` file in `src/` with a corresponding npm script in `package.json`. Run scripts via `pnpm --filter @workspace/scripts run <script>`. Scripts can import any workspace package (e.g., `@workspace/db`) by adding it as a dependency in `scripts/package.json`.
+Run `pnpm --filter @workspace/api-spec run codegen` to regenerate API client hooks from OpenAPI spec.

@@ -1,25 +1,50 @@
 {
   "extends": "../../tsconfig.base.json",
-  "include": ["src/**/*"],
-  "exclude": ["node_modules", "build", "dist", "**/*.test.ts"],
+  "include": [
+    "next-env.d.ts",
+    "**/*.ts",
+    "**/*.tsx",
+    ".next/types/**/*.ts"
+  ],
+  "exclude": [
+    "node_modules"
+  ],
   "compilerOptions": {
+    "target": "ES2022",
+    "lib": [
+      "dom",
+      "dom.iterable",
+      "esnext"
+    ],
     "noEmit": true,
     "jsx": "preserve",
-    "lib": ["esnext", "dom", "dom.iterable"],
+    "incremental": true,
     "resolveJsonModule": true,
-    "allowImportingTsExtensions": true,
+    "isolatedModules": true,
     "moduleResolution": "bundler",
-    "types": ["node", "vite/client"],
+    "plugins": [
+      {
+        "name": "next"
+      }
+    ],
     "paths": {
-      "@/*": ["./src/*"]
-    }
+      "@/*": [
+        "./*"
+      ]
+    },
+    "allowJs": true,
+    "strict": false,
+    "esModuleInterop": true
   },
   "references": [
     {
       "path": "../../lib/api-client-react"
     },
     {
-      "path": "../../lib/replit-auth-web"
+      "path": "../../lib/db"
+    },
+    {
+      "path": "../../lib/api-zod"
     }
   ]
 }

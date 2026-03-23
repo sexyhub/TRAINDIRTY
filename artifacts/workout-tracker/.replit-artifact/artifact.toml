@@ -12,20 +12,22 @@ version = "1.0.0"
 [[services]]
 localPort = 19273
 name = "web"
-paths = ["/"]
+paths = ["/", "/api"]
 
 [services.development]
 run = "pnpm --filter @workspace/workout-tracker run dev"
 
 [services.env]
 PORT = "19273"
-BASE_PATH = "/"
 
 [services.production]
 build = ["pnpm", "--filter", "@workspace/workout-tracker", "run", "build"]
-publicDir = "artifacts/workout-tracker/dist/public"
-serve = "static"
 
-[[services.production.rewrites]]
-from = "/*"
-to = "/index.html"
+[services.production.run]
+args = ["pnpm", "--filter", "@workspace/workout-tracker", "run", "start"]
+
+[services.production.run.env]
+PORT = "19273"
+
+[services.production.health.startup]
+path = "/api/healthz"
